@@ -7,17 +7,22 @@ export type StatusProposta = 'EMITIDA' | 'PAGA' | 'CANCELADA';
 export interface Proposta {
   id: string;
   dataCadastro: string;
+
   segurado: string;
   cpfCnpj: string;
+  produtor: string;
+
   seguradora: string;
   tipo: TipoProposta;
   ramo: string;
-  apolice: string;
-  vigenciaInicio: string;
-  vigenciaFim: string;
+
+  propostaNumero: string;
+  dataTransmissao: string; // yyyy-mm-dd
+
   premioLiquido: number;
   comissaoPercentual: number;
   comissaoValor: number;
+
   status: StatusProposta;
   observacoes?: string;
 }

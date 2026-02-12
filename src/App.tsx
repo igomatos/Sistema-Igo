@@ -4,21 +4,22 @@ import { Dashboard } from '@/pages/Dashboard';
 import { Propostas } from '@/pages/Propostas';
 import { Comissoes } from '@/pages/Comissoes';
 import { Relatorios } from '@/pages/Relatorios';
+import { ConfiguracoesProdutores } from '@/pages/ConfiguracoesProdutores';
 import { usePropostas } from '@/hooks/usePropostas';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { 
-    propostas, 
-    comissoes, 
-    metricas, 
-    adicionarProposta, 
+  const {
+    propostas,
+    comissoes,
+    metricas,
+    adicionarProposta,
     adicionarPagamento,
     excluirProposta,
     excluirPagamento,
-    editarProposta
+    editarProposta,
   } = usePropostas();
 
   const handleAdicionarProposta = (proposta: Parameters<typeof adicionarProposta>[0]) => {
@@ -61,7 +62,7 @@ function App() {
         return <Dashboard propostas={propostas} metricas={metricas} />;
       case 'propostas':
         return (
-          <Propostas 
+          <Propostas
             propostas={propostas}
             onAdicionar={handleAdicionarProposta}
             onExcluir={handleExcluirProposta}
@@ -70,7 +71,7 @@ function App() {
         );
       case 'comissoes':
         return (
-          <Comissoes 
+          <Comissoes
             comissoes={comissoes}
             onAdicionarPagamento={handleAdicionarPagamento}
             onExcluirPagamento={handleExcluirPagamento}
@@ -78,6 +79,11 @@ function App() {
         );
       case 'relatorios':
         return <Relatorios propostas={propostas} />;
+
+      // ✅ NOVA ABA
+      case 'config_produtores':
+        return <ConfiguracoesProdutores />;
+
       default:
         return <Dashboard propostas={propostas} metricas={metricas} />;
     }

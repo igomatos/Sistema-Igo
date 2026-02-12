@@ -1,16 +1,17 @@
-import { useState } from 'react';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Edit2, 
-  Trash2, 
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Plus,
+  Search,
+  Filter,
+  Edit2,
+  Trash2,
   FileText,
   User,
   Building2,
   Tag,
-  Upload
+  Upload,
 } from 'lucide-react';
+
 import { PdfUploader } from '@/components/PdfUploader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,13 +25,13 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-// Nota: o Select (Radix UI) pode apresentar instabilidade em alguns ambientes.
-// Para evitar tela branca ao selecionar, usamos <select> nativo nos campos críticos.
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
+
 import type { Proposta, TipoProposta, StatusProposta } from '@/types';
 import { seguradoras, ramos } from '@/data/mockData';
+import { carregarProdutores } from '@/data/produtores';
 
 interface PropostasProps {
   propostas: Proposta[];
@@ -39,7 +40,59 @@ interface PropostasProps {
   onEditar: (id: string, dados: Partial<Proposta>) => void;
 }
 
+type FormDataState = {
+  segurado: string;
+  cpfCnpj: string;
+  produtor: string;
+  seguradora: string;
+  tipo: TipoProposta;
+  ramo: string;
+
+  // ✅ campos principais
+  propostaNumero: string;
+  dataTransmissao: string; // yyyy-mm-dd
+
+  premioLiquido: string;
+  comissaoPercentual: string;
+
+  observacoes: string;
+  status: StatusProposta;
+};
+
+const DEFAULT_FORM: FormDataState = {
+  segurado: '',
+  cpfCnpj: '',
+  produtor: 'IGO',
+  seguradora: '',
+  tipo: 'NOVO',
+  ramo: '',
+
+  propostaNumero: '',
+  dataTransmissao: '',
+
+  premioLiquido: '',
+  comissaoPercentual: '20',
+
+  observacoes: '',
+  status: 'EMITIDA',
+};
+
+type DadosPdfExtraidos = Partial<{
+  segurado: string;
+  cpfCnpj: string;
+  produtor: string;
+  seguradora: string;
+  ramo: string;
+
+  premioLiquido: number | string;
+  comissaoPercentual: number | string;
+
+  propostaNumero: string;
+  dataTransmissao: string;
+}>;
+
 export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: PropostasProps) {
+  const [produtores, setProdutores] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<string>('todos');
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
@@ -47,50 +100,75 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
   const [isPdfUploaderOpen, setIsPdfUploaderOpen] = useState(false);
   const [propostaEditando, setPropostaEditando] = useState<Proposta | null>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    segurado: '',
-    cpfCnpj: '',
-    seguradora: '',
-    tipo: 'NOVO' as TipoProposta,
-    ramo: '',
-    apolice: '',
-    vigenciaInicio: '',
-    vigenciaFim: '',
-    premioLiquido: '',
-    comissaoPercentual: '20',
-    observacoes: '',
-    status: 'EMITIDA' as StatusProposta
-  });
+  const [formData, setFormData] = useState<FormDataState>(DEFAULT_FORM);
 
-  const propostasFiltradas = propostas.filter(p => {
-    const matchSearch = 
-      p.segurado.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.apolice.includes(searchTerm) ||
-      p.seguradora.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    const lista = carregarProdutores();
+    setProdutores(lista);
+
+    // garante que o default do form existe na lista
+    if (lista.length && !lista.some((p) => p.toLowerCase() === formData.produtor.toLowerCase())) {
+      setFormData((prev) => ({ ...prev, produtor: lista[0] }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const searchLower = useMemo(() => searchTerm.toLowerCase(), [searchTerm]);
+
+  const propostasFiltradas = propostas.filter((p) => {
+    const produtor = ((p as any).produtor ?? '').toString().toLowerCase();
+    const propostaNumero = ((p as any).propostaNumero ?? '').toString();
+    const dataTransmissao = ((p as any).dataTransmissao ?? '').toString();
+
+    const matchSearch =
+      p.segurado.toLowerCase().includes(searchLower) ||
+      p.seguradora.toLowerCase().includes(searchLower) ||
+      produtor.includes(searchLower) ||
+      propostaNumero.includes(searchTerm) ||
+      dataTransmissao.includes(searchTerm);
+
     const matchTipo = filtroTipo === 'todos' || p.tipo === filtroTipo;
     const matchStatus = filtroStatus === 'todos' || p.status === filtroStatus;
+
     return matchSearch && matchTipo && matchStatus;
   });
 
+  const resetForm = () => {
+    setFormData({
+      ...DEFAULT_FORM,
+      produtor: produtores[0] ?? DEFAULT_FORM.produtor,
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const premio = parseFloat(formData.premioLiquido) || 0;
-    const percentual = parseFloat(formData.comissaoPercentual) || 0;
+
+    const premio = Number.parseFloat(formData.premioLiquido) || 0;
+    const percentual = Number.parseFloat(formData.comissaoPercentual) || 0;
     const comissao = (premio * percentual) / 100;
 
-    const novaProposta = {
-      ...formData,
+    const payload: Omit<Proposta, 'id' | 'dataCadastro'> = {
+      segurado: formData.segurado,
+      cpfCnpj: formData.cpfCnpj,
+      produtor: formData.produtor,
+      seguradora: formData.seguradora,
+      tipo: formData.tipo,
+      ramo: formData.ramo,
+
+      // ✅ novos campos
+      ...( { propostaNumero: formData.propostaNumero, dataTransmissao: formData.dataTransmissao } as any),
+
       premioLiquido: premio,
       comissaoPercentual: percentual,
-      comissaoValor: comissao
+      comissaoValor: comissao,
+      status: formData.status,
+      observacoes: formData.observacoes || undefined,
     };
 
     if (propostaEditando) {
-      onEditar(propostaEditando.id, novaProposta);
+      onEditar(propostaEditando.id, payload);
     } else {
-      onAdicionar(novaProposta);
+      onAdicionar(payload);
     }
 
     resetForm();
@@ -98,39 +176,26 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
     setPropostaEditando(null);
   };
 
-  const resetForm = () => {
-    setFormData({
-      segurado: '',
-      cpfCnpj: '',
-      seguradora: '',
-      tipo: 'NOVO',
-      ramo: '',
-      apolice: '',
-      vigenciaInicio: '',
-      vigenciaFim: '',
-      premioLiquido: '',
-      comissaoPercentual: '20',
-      observacoes: '',
-      status: 'EMITIDA'
-    });
-  };
-
   const handleEdit = (proposta: Proposta) => {
     setPropostaEditando(proposta);
+
     setFormData({
       segurado: proposta.segurado,
       cpfCnpj: proposta.cpfCnpj,
+      produtor: (proposta as any).produtor || produtores[0] || 'IGO',
       seguradora: proposta.seguradora,
       tipo: proposta.tipo,
       ramo: proposta.ramo,
-      apolice: proposta.apolice,
-      vigenciaInicio: proposta.vigenciaInicio,
-      vigenciaFim: proposta.vigenciaFim,
+
+      propostaNumero: (proposta as any).propostaNumero || '',
+      dataTransmissao: (proposta as any).dataTransmissao || '',
+
       premioLiquido: proposta.premioLiquido.toString(),
       comissaoPercentual: proposta.comissaoPercentual.toString(),
       observacoes: proposta.observacoes || '',
-      status: proposta.status
+      status: proposta.status,
     });
+
     setIsDialogOpen(true);
   };
 
@@ -140,21 +205,31 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
     setIsDialogOpen(true);
   };
 
-  const handleDadosPdfExtraidos = (dados: any) => {
+  const handleDadosPdfExtraidos = (dados: DadosPdfExtraidos) => {
+    setPropostaEditando(null);
+
+    const premioLiquidoStr =
+      dados.premioLiquido === undefined || dados.premioLiquido === null ? '' : String(dados.premioLiquido);
+
+    const comissaoPercentualStr =
+      dados.comissaoPercentual === undefined || dados.comissaoPercentual === null ? '20' : String(dados.comissaoPercentual);
+
     setFormData({
+      ...DEFAULT_FORM,
       segurado: dados.segurado || '',
       cpfCnpj: dados.cpfCnpj || '',
+      produtor: dados.produtor || produtores[0] || 'IGO',
       seguradora: dados.seguradora || '',
       tipo: 'NOVO',
       ramo: dados.ramo || '',
-      apolice: dados.apolice || '',
-      vigenciaInicio: dados.vigenciaInicio || '',
-      vigenciaFim: dados.vigenciaFim || '',
-      premioLiquido: dados.premioLiquido ? dados.premioLiquido.toString() : '',
-      comissaoPercentual: dados.comissaoPercentual ? dados.comissaoPercentual.toString() : '20',
+      propostaNumero: dados.propostaNumero || '',
+      dataTransmissao: dados.dataTransmissao || '',
+      premioLiquido: premioLiquidoStr,
+      comissaoPercentual: comissaoPercentualStr,
+      status: 'EMITIDA',
       observacoes: '',
-      status: 'EMITIDA'
     });
+
     setIsDialogOpen(true);
   };
 
@@ -166,8 +241,9 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
           <h2 className="text-2xl font-bold text-slate-900">Propostas</h2>
           <p className="text-slate-500">Gerencie todas as suas propostas de seguro</p>
         </div>
+
         <div className="flex gap-2">
-          <Button 
+          <Button
             variant="outline"
             onClick={() => setIsPdfUploaderOpen(true)}
             className="border-blue-500 text-blue-600 hover:bg-blue-50"
@@ -175,186 +251,223 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
             <Upload className="w-4 h-4 mr-2" />
             Importar PDF
           </Button>
+
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button 
-                onClick={handleNew}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
-              >
+              <Button onClick={handleNew} className="bg-emerald-500 hover:bg-emerald-600 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Proposta
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-emerald-500" />
-                {propostaEditando ? 'Editar Proposta' : 'Nova Proposta'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="segurado">Nome do Segurado *</Label>
-                  <Input
-                    id="segurado"
-                    value={formData.segurado}
-                    onChange={(e) => setFormData({ ...formData, segurado: e.target.value })}
-                    placeholder="Nome completo"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cpfCnpj">CPF/CNPJ *</Label>
-                  <Input
-                    id="cpfCnpj"
-                    value={formData.cpfCnpj}
-                    onChange={(e) => setFormData({ ...formData, cpfCnpj: e.target.value })}
-                    placeholder="000.000.000-00"
-                    required
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="seguradora">Seguradora *</Label>
-                  <select
-                    id="seguradora"
-                    className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
-                    value={formData.seguradora}
-                    onChange={(e) => setFormData({ ...formData, seguradora: e.target.value })}
-                    required
-                  >
-                    <option value="" disabled>
-                      Selecione...
-                    </option>
-                    {seguradoras.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-emerald-500" />
+                  {propostaEditando ? 'Editar Proposta' : 'Nova Proposta'}
+                </DialogTitle>
+              </DialogHeader>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Segurado + CPF */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="segurado">Nome do Segurado *</Label>
+                    <Input
+                      id="segurado"
+                      value={formData.segurado}
+                      onChange={(e) => setFormData({ ...formData, segurado: e.target.value })}
+                      placeholder="Nome completo"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cpfCnpj">CPF/CNPJ *</Label>
+                    <Input
+                      id="cpfCnpj"
+                      value={formData.cpfCnpj}
+                      onChange={(e) => setFormData({ ...formData, cpfCnpj: e.target.value })}
+                      placeholder="000.000.000-00"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Produtor + Seguradora */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="produtor">Produtor *</Label>
+                    <select
+                      id="produtor"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                      value={formData.produtor}
+                      onChange={(e) => setFormData({ ...formData, produtor: e.target.value })}
+                      required
+                    >
+                      {produtores.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="seguradora">Seguradora *</Label>
+                    <select
+                      id="seguradora"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                      value={formData.seguradora}
+                      onChange={(e) => setFormData({ ...formData, seguradora: e.target.value })}
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecione...
                       </option>
-                    ))}
-                  </select>
+                      {seguradoras.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tipo">Tipo *</Label>
-                  <select
-                    id="tipo"
-                    className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
-                    value={formData.tipo}
-                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoProposta })}
-                    required
-                  >
-                    <option value="NOVO">Novo</option>
-                    <option value="RENOVACAO">Renovação</option>
-                  </select>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="ramo">Ramo *</Label>
-                  <select
-                    id="ramo"
-                    className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
-                    value={formData.ramo}
-                    onChange={(e) => setFormData({ ...formData, ramo: e.target.value })}
-                    required
-                  >
-                    <option value="" disabled>
-                      Selecione...
-                    </option>
-                    {ramos.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
+                {/* Tipo + Ramo */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tipo">Tipo *</Label>
+                    <select
+                      id="tipo"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                      value={formData.tipo}
+                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoProposta })}
+                      required
+                    >
+                      <option value="NOVO">Novo</option>
+                      <option value="RENOVACAO">Renovação</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="ramo">Ramo *</Label>
+                    <select
+                      id="ramo"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                      value={formData.ramo}
+                      onChange={(e) => setFormData({ ...formData, ramo: e.target.value })}
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecione...
                       </option>
-                    ))}
-                  </select>
+                      {ramos.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="apolice">Nº Apólice *</Label>
-                  <Input
-                    id="apolice"
-                    value={formData.apolice}
-                    onChange={(e) => setFormData({ ...formData, apolice: e.target.value })}
-                    placeholder="000000000"
-                    required
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="vigenciaInicio">Início Vigência *</Label>
-                  <Input
-                    id="vigenciaInicio"
-                    type="date"
-                    value={formData.vigenciaInicio}
-                    onChange={(e) => setFormData({ ...formData, vigenciaInicio: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vigenciaFim">Fim Vigência *</Label>
-                  <Input
-                    id="vigenciaFim"
-                    type="date"
-                    value={formData.vigenciaFim}
-                    onChange={(e) => setFormData({ ...formData, vigenciaFim: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
+                {/* Proposta + Data transmissão */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="propostaNumero">Proposta *</Label>
+                    <Input
+                      id="propostaNumero"
+                      value={formData.propostaNumero}
+                      onChange={(e) => setFormData({ ...formData, propostaNumero: e.target.value })}
+                      placeholder="Número da proposta"
+                      required
+                    />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dataTransmissao">Data de Transmissão *</Label>
+                    <Input
+                      id="dataTransmissao"
+                      type="date"
+                      value={formData.dataTransmissao}
+                      onChange={(e) => setFormData({ ...formData, dataTransmissao: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Prêmio Líquido + Comissão % */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="premioLiquido">Prêmio Líquido (R$) *</Label>
+                    <Input
+                      id="premioLiquido"
+                      type="number"
+                      step="0.01"
+                      value={formData.premioLiquido}
+                      onChange={(e) => setFormData({ ...formData, premioLiquido: e.target.value })}
+                      placeholder="0,00"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="comissaoPercentual">% Comissão *</Label>
+                    <Input
+                      id="comissaoPercentual"
+                      type="number"
+                      step="0.01"
+                      value={formData.comissaoPercentual}
+                      onChange={(e) => setFormData({ ...formData, comissaoPercentual: e.target.value })}
+                      placeholder="20"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status *</Label>
+                    <select
+                      id="status"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as StatusProposta })}
+                      required
+                    >
+                      <option value="EMITIDA">Emitida</option>
+                      <option value="PAGA">Paga</option>
+                      <option value="CANCELADA">Cancelada</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Observações */}
                 <div className="space-y-2">
-                  <Label htmlFor="premioLiquido">Prêmio Líquido (R$) *</Label>
-                  <Input
-                    id="premioLiquido"
-                    type="number"
-                    step="0.01"
-                    value={formData.premioLiquido}
-                    onChange={(e) => setFormData({ ...formData, premioLiquido: e.target.value })}
-                    placeholder="0,00"
-                    required
+                  <Label htmlFor="observacoes">Observações</Label>
+                  <textarea
+                    id="observacoes"
+                    value={formData.observacoes}
+                    onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                    className="w-full min-h-[80px] px-3 py-2 border rounded-md text-sm"
+                    placeholder="Informações adicionais..."
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="comissaoPercentual">% Comissão *</Label>
-                  <Input
-                    id="comissaoPercentual"
-                    type="number"
-                    step="0.01"
-                    value={formData.comissaoPercentual}
-                    onChange={(e) => setFormData({ ...formData, comissaoPercentual: e.target.value })}
-                    placeholder="20"
-                    required
-                  />
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="observacoes">Observações</Label>
-                <textarea
-                  id="observacoes"
-                  value={formData.observacoes}
-                  onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                  className="w-full min-h-[80px] px-3 py-2 border rounded-md text-sm"
-                  placeholder="Informações adicionais..."
-                />
-              </div>
-
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="outline">Cancelar</Button>
-                </DialogClose>
-                <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600">
-                  {propostaEditando ? 'Salvar Alterações' : 'Cadastrar Proposta'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Cancelar
+                    </Button>
+                  </DialogClose>
+                  <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600">
+                    {propostaEditando ? 'Salvar Alterações' : 'Cadastrar Proposta'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -366,15 +479,18 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
-                  placeholder="Buscar por segurado, apólice ou seguradora..."
+                  placeholder="Buscar por segurado, proposta, seguradora ou produtor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
+
             <div className="w-[180px]">
-              <label className="sr-only" htmlFor="filtroTipo">Tipo</label>
+              <label className="sr-only" htmlFor="filtroTipo">
+                Tipo
+              </label>
               <div className="relative">
                 <Filter className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <select
@@ -391,7 +507,9 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
             </div>
 
             <div className="w-[180px]">
-              <label className="sr-only" htmlFor="filtroStatus">Status</label>
+              <label className="sr-only" htmlFor="filtroStatus">
+                Status
+              </label>
               <div className="relative">
                 <Tag className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <select
@@ -419,12 +537,14 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
             <Badge variant="secondary">{propostasFiltradas.length} propostas</Badge>
           </CardTitle>
         </CardHeader>
+
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Segurado</th>
+                  <th className="text-left py-3 px-4 font-medium text-slate-600">Produtor</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Seguradora</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Tipo</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Ramo</th>
@@ -434,10 +554,11 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
                   <th className="text-center py-3 px-4 font-medium text-slate-600">Ações</th>
                 </tr>
               </thead>
+
               <tbody>
                 {propostasFiltradas.map((proposta) => (
-                  <tr 
-                    key={proposta.id} 
+                  <tr
+                    key={proposta.id}
                     className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
                   >
                     <td className="py-3 px-4">
@@ -449,19 +570,28 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
                         </div>
                       </div>
                     </td>
+
+                    <td className="py-3 px-4 text-sm font-medium text-slate-700">
+                      {(proposta as any).produtor}
+                    </td>
+
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         <Building2 className="w-4 h-4 text-slate-400" />
                         <span className="text-sm">{proposta.seguradora}</span>
                       </div>
                     </td>
+
                     <td className="py-3 px-4">
                       <StatusBadge status={proposta.tipo} type="tipo" />
                     </td>
+
                     <td className="py-3 px-4 text-sm">{proposta.ramo}</td>
+
                     <td className="py-3 px-4 text-right font-medium">
                       R$ {proposta.premioLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
+
                     <td className="py-3 px-4 text-right">
                       <div>
                         <p className="font-medium text-emerald-600">
@@ -470,9 +600,11 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
                         <p className="text-xs text-slate-500">{proposta.comissaoPercentual}%</p>
                       </div>
                     </td>
+
                     <td className="py-3 px-4 text-center">
                       <StatusBadge status={proposta.status} type="proposta" />
                     </td>
+
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-center gap-2">
                         <Button
@@ -483,6 +615,7 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
                         >
                           <Edit2 className="w-4 h-4" />
                         </Button>
+
                         <Button
                           variant="ghost"
                           size="icon"
@@ -497,6 +630,7 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
                 ))}
               </tbody>
             </table>
+
             {propostasFiltradas.length === 0 && (
               <div className="text-center py-12">
                 <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
