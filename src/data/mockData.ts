@@ -30,15 +30,15 @@ export const propostasMock: Proposta[] = [
     dataCadastro: '2025-01-10',
     segurado: 'João Silva',
     cpfCnpj: '123.456.789-00',
+    produtor: 'IGO MATOS',
     seguradora: 'Porto Seguro',
     tipo: 'NOVO',
     ramo: 'Automóvel',
-    apolice: '123456789',
-    vigenciaInicio: '2025-01-15',
-    vigenciaFim: '2026-01-15',
-    premioLiquido: 3500.00,
+    propostaNumero: '123456789',
+    dataTransmissao: '2025-01-10',
+    premioLiquido: 3500,
     comissaoPercentual: 20,
-    comissaoValor: 700.00,
+    comissaoValor: 700,
     status: 'EMITIDA',
     observacoes: 'Cliente indicado pelo Carlos'
   },
@@ -47,15 +47,15 @@ export const propostasMock: Proposta[] = [
     dataCadastro: '2025-01-12',
     segurado: 'Maria Santos',
     cpfCnpj: '987.654.321-00',
+    produtor: 'IGO MATOS',
     seguradora: 'Bradesco Seguros',
     tipo: 'RENOVACAO',
     ramo: 'Residencial',
-    apolice: '987654321',
-    vigenciaInicio: '2025-01-20',
-    vigenciaFim: '2026-01-20',
-    premioLiquido: 1800.00,
+    propostaNumero: '987654321',
+    dataTransmissao: '2025-01-12',
+    premioLiquido: 1800,
     comissaoPercentual: 18,
-    comissaoValor: 324.00,
+    comissaoValor: 324,
     status: 'EMITIDA'
   },
   {
@@ -63,15 +63,15 @@ export const propostasMock: Proposta[] = [
     dataCadastro: '2025-01-15',
     segurado: 'Empresa ABC Ltda',
     cpfCnpj: '12.345.678/0001-90',
+    produtor: 'IGO MATOS',
     seguradora: 'SulAmérica',
     tipo: 'NOVO',
     ramo: 'Empresarial',
-    apolice: '456789123',
-    vigenciaInicio: '2025-02-01',
-    vigenciaFim: '2026-02-01',
-    premioLiquido: 12500.00,
+    propostaNumero: '456789123',
+    dataTransmissao: '2025-01-15',
+    premioLiquido: 12500,
     comissaoPercentual: 15,
-    comissaoValor: 1875.00,
+    comissaoValor: 1875,
     status: 'EMITIDA',
     observacoes: 'Seguro empresarial completo'
   },
@@ -80,15 +80,15 @@ export const propostasMock: Proposta[] = [
     dataCadastro: '2025-01-18',
     segurado: 'Pedro Oliveira',
     cpfCnpj: '456.789.123-00',
+    produtor: 'IGO MATOS',
     seguradora: 'Tokio Marine',
     tipo: 'NOVO',
     ramo: 'Vida',
-    apolice: '789123456',
-    vigenciaInicio: '2025-01-25',
-    vigenciaFim: '2026-01-25',
-    premioLiquido: 2400.00,
+    propostaNumero: '789123456',
+    dataTransmissao: '2025-01-18',
+    premioLiquido: 2400,
     comissaoPercentual: 25,
-    comissaoValor: 600.00,
+    comissaoValor: 600,
     status: 'EMITIDA'
   },
   {
@@ -96,15 +96,15 @@ export const propostasMock: Proposta[] = [
     dataCadastro: '2025-01-20',
     segurado: 'Ana Costa',
     cpfCnpj: '789.123.456-00',
+    produtor: 'IGO MATOS',
     seguradora: 'Mapfre',
     tipo: 'RENOVACAO',
     ramo: 'Automóvel',
-    apolice: '321654987',
-    vigenciaInicio: '2025-01-22',
-    vigenciaFim: '2026-01-22',
-    premioLiquido: 4200.00,
+    propostaNumero: '321654987',
+    dataTransmissao: '2025-01-20',
+    premioLiquido: 4200,
     comissaoPercentual: 20,
-    comissaoValor: 840.00,
+    comissaoValor: 840,
     status: 'EMITIDA'
   },
   {
@@ -112,15 +112,15 @@ export const propostasMock: Proposta[] = [
     dataCadastro: '2025-01-22',
     segurado: 'Carlos Ferreira',
     cpfCnpj: '321.654.987-00',
+    produtor: 'IGO MATOS',
     seguradora: 'Liberty Seguros',
     tipo: 'NOVO',
     ramo: 'Saúde',
-    apolice: '654987321',
-    vigenciaInicio: '2025-02-01',
-    vigenciaFim: '2026-02-01',
-    premioLiquido: 8900.00,
+    propostaNumero: '654987321',
+    dataTransmissao: '2025-01-22',
+    premioLiquido: 8900,
     comissaoPercentual: 12,
-    comissaoValor: 1068.00,
+    comissaoValor: 1068,
     status: 'EMITIDA'
   },
   {
@@ -128,15 +128,15 @@ export const propostasMock: Proposta[] = [
     dataCadastro: '2025-01-25',
     segurado: 'Construtora XYZ',
     cpfCnpj: '98.765.432/0001-10',
+    produtor: 'IGO MATOS',
     seguradora: 'HDI Seguros',
     tipo: 'RENOVACAO',
     ramo: 'Riscos Diversos',
-    apolice: '147258369',
-    vigenciaInicio: '2025-02-10',
-    vigenciaFim: '2026-02-10',
-    premioLiquido: 15800.00,
+    propostaNumero: '147258369',
+    dataTransmissao: '2025-01-25',
+    premioLiquido: 15800,
     comissaoPercentual: 14,
-    comissaoValor: 2212.00,
+    comissaoValor: 2212,
     status: 'EMITIDA'
   },
   {
@@ -144,82 +144,26 @@ export const propostasMock: Proposta[] = [
     dataCadastro: '2025-01-28',
     segurado: 'Fernanda Lima',
     cpfCnpj: '147.258.369-00',
+    produtor: 'IGO MATOS',
     seguradora: 'Azul Seguros',
     tipo: 'NOVO',
     ramo: 'Automóvel',
-    apolice: '369258147',
-    vigenciaInicio: '2025-02-05',
-    vigenciaFim: '2026-02-05',
-    premioLiquido: 2800.00,
+    propostaNumero: '369258147',
+    dataTransmissao: '2025-01-28',
+    premioLiquido: 2800,
     comissaoPercentual: 22,
-    comissaoValor: 616.00,
+    comissaoValor: 616,
     status: 'EMITIDA'
   }
 ];
 
 export const pagamentosMock: PagamentoComissao[] = [
-  // Proposta 1 - Pago parcialmente
-  {
-    id: 'p1',
-    propostaId: '1',
-    dataPagamento: '2025-01-20',
-    valorPago: 350.00,
-    referencia: '20/01/2025'
-  },
-  // Proposta 2 - Pago totalmente
-  {
-    id: 'p2',
-    propostaId: '2',
-    dataPagamento: '2025-01-20',
-    valorPago: 324.00,
-    referencia: '20/01/2025'
-  },
-  // Proposta 3 - Pago parcialmente (2 pagamentos)
-  {
-    id: 'p3',
-    propostaId: '3',
-    dataPagamento: '2025-01-20',
-    valorPago: 937.50,
-    referencia: '20/01/2025'
-  },
-  {
-    id: 'p4',
-    propostaId: '3',
-    dataPagamento: '2025-02-05',
-    valorPago: 500.00,
-    referencia: '05/02/2025'
-  },
-  // Proposta 4 - Sem pagamento
-  // Proposta 5 - Pago parcialmente
-  {
-    id: 'p5',
-    propostaId: '5',
-    dataPagamento: '2025-01-20',
-    valorPago: 400.00,
-    referencia: '20/01/2025'
-  },
-  // Proposta 6 - Pago parcialmente
-  {
-    id: 'p6',
-    propostaId: '6',
-    dataPagamento: '2025-01-20',
-    valorPago: 500.00,
-    referencia: '20/01/2025'
-  },
-  // Proposta 7 - Pago totalmente
-  {
-    id: 'p7',
-    propostaId: '7',
-    dataPagamento: '2025-01-20',
-    valorPago: 1106.00,
-    referencia: '20/01/2025'
-  },
-  {
-    id: 'p8',
-    propostaId: '7',
-    dataPagamento: '2025-02-05',
-    valorPago: 1106.00,
-    referencia: '05/02/2025'
-  },
-  // Proposta 8 - Sem pagamento
+  { id: 'p1', propostaId: '1', dataPagamento: '2025-01-20', valorPago: 350, referencia: '20/01/2025' },
+  { id: 'p2', propostaId: '2', dataPagamento: '2025-01-20', valorPago: 324, referencia: '20/01/2025' },
+  { id: 'p3', propostaId: '3', dataPagamento: '2025-01-20', valorPago: 937.5, referencia: '20/01/2025' },
+  { id: 'p4', propostaId: '3', dataPagamento: '2025-02-05', valorPago: 500, referencia: '05/02/2025' },
+  { id: 'p5', propostaId: '5', dataPagamento: '2025-01-20', valorPago: 400, referencia: '20/01/2025' },
+  { id: 'p6', propostaId: '6', dataPagamento: '2025-01-20', valorPago: 500, referencia: '20/01/2025' },
+  { id: 'p7', propostaId: '7', dataPagamento: '2025-01-20', valorPago: 1106, referencia: '20/01/2025' },
+  { id: 'p8', propostaId: '7', dataPagamento: '2025-02-05', valorPago: 1106, referencia: '05/02/2025' }
 ];
