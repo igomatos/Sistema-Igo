@@ -30,7 +30,7 @@ export const propostasMock: Proposta[] = [
     dataCadastro: '2025-01-10',
     segurado: 'João Silva',
     cpfCnpj: '123.456.789-00',
-    produtor: 'IGO MATOS seguros',
+    produtor: 'IGO MATOS',
     seguradora: 'Porto Seguro',
     tipo: 'NOVO',
     ramo: 'Automóvel',
