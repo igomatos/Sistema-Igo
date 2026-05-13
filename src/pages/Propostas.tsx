@@ -32,6 +32,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import type { Proposta, TipoProposta, StatusProposta } from '@/types';
 import { seguradoras, ramos } from '@/data/mockData';
 import { carregarProdutores } from '@/data/produtores';
+import { supabase } from '@/lib/supabase';
 
 interface PropostasProps {
   propostas: Proposta[];
@@ -47,14 +48,11 @@ type FormDataState = {
   seguradora: string;
   tipo: TipoProposta;
   ramo: string;
-
-  // ✅ campos principais
   propostaNumero: string;
-  dataTransmissao: string; // yyyy-mm-dd
-
+  dataTransmissao: string;
   premioLiquido: string;
+  quantidadeParcelas: string;
   comissaoPercentual: string;
-
   observacoes: string;
   status: StatusProposta;
 };
@@ -66,13 +64,11 @@ const DEFAULT_FORM: FormDataState = {
   seguradora: '',
   tipo: 'NOVO',
   ramo: '',
-
   propostaNumero: '',
   dataTransmissao: '',
-
   premioLiquido: '',
+  quantidadeParcelas: '1',
   comissaoPercentual: '20',
-
   observacoes: '',
   status: 'EMITIDA',
 };
@@ -83,15 +79,69 @@ type DadosPdfExtraidos = Partial<{
   produtor: string;
   seguradora: string;
   ramo: string;
-
   premioLiquido: number | string;
   comissaoPercentual: number | string;
-
   propostaNumero: string;
   dataTransmissao: string;
 }>;
 
-export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: PropostasProps) {
+function limparMoeda(valor: string | number | undefined | null, fallback = 0) {
+  if (valor === undefined || valor === null || valor === '') return fallback;
+
+  const texto = String(valor)
+    .replace(/[^\d,.-]/g, '')
+    .trim();
+
+  if (!texto) return fallback;
+
+  const temVirgula = texto.includes(',');
+  const temPonto = texto.includes('.');
+
+  let normalizado = texto;
+
+  if (temVirgula && temPonto) {
+    normalizado = texto.replace(/\./g, '').replace(',', '.');
+  } else if (temVirgula) {
+    normalizado = texto.replace(',', '.');
+  } else {
+    normalizado = texto;
+  }
+
+  const numero = Number.parseFloat(normalizado);
+
+  return Number.isFinite(numero) ? numero : fallback;
+}
+
+function formatarMoeda(valor: number) {
+  return valor.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatarCampoMoeda(valor: string) {
+  const somenteNumeros = valor.replace(/\D/g, '');
+
+  if (!somenteNumeros) return '';
+
+  const numero = Number(somenteNumeros) / 100;
+
+  return numero.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatarPercentualDigitado(valor: string) {
+  return valor.replace(/[^\d,.]/g, '');
+}
+
+export function Propostas({
+  propostas,
+  onAdicionar,
+  onExcluir,
+  onEditar,
+}: PropostasProps) {
   const [produtores, setProdutores] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<string>('todos');
@@ -99,26 +149,80 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPdfUploaderOpen, setIsPdfUploaderOpen] = useState(false);
   const [propostaEditando, setPropostaEditando] = useState<Proposta | null>(null);
-
   const [formData, setFormData] = useState<FormDataState>(DEFAULT_FORM);
+  const [propostasBanco, setPropostasBanco] = useState<Proposta[]>([]);
+
+useEffect(() => {
+  async function carregarPropostasBanco() {
+    const { data, error } = await supabase
+      .from('propostas')
+      .select('*')
+      .order('data_cadastro', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao carregar segurados do Supabase:', error);
+      return;
+    }
+
+    const convertidas: Proposta[] = (data || []).map((row: any) => ({
+      id: row.id,
+      segurado: row.segurado || '',
+      cpfCnpj: row.cpf_cnpj || '',
+      produtor: row.produtor || '',
+      seguradora: row.seguradora || '',
+      tipo: row.tipo || 'NOVO',
+      ramo: row.ramo || '',
+      propostaNumero: row.proposta_numero || '',
+      dataTransmissao: row.data_transmissao || '',
+      premioLiquido: Number(row.premio_liquido || 0),
+      quantidadeParcelas: Number(row.quantidade_parcelas || 1),
+      valorParcelaSeguro: Number(row.valor_parcela_seguro || 0),
+      comissaoPercentual: Number(row.comissao_percentual || 0),
+      comissaoParcela: Number(row.comissao_parcela || 0),
+      comissaoValor: Number(row.comissao_valor || 0),
+      status: row.status || 'EMITIDA',
+      statusSegurado: row.status_segurado || 'ATIVO',
+      observacoes: row.observacoes || '',
+      dataCadastro: row.data_cadastro || '',
+    }));
+
+    setPropostasBanco(convertidas);
+  }
+
+  carregarPropostasBanco();
+}, []);
 
   useEffect(() => {
     const lista = carregarProdutores();
     setProdutores(lista);
 
-    // garante que o default do form existe na lista
-    if (lista.length && !lista.some((p) => p.toLowerCase() === formData.produtor.toLowerCase())) {
+    if (
+      lista.length &&
+      !lista.some((p) => p.toLowerCase() === formData.produtor.toLowerCase())
+    ) {
       setFormData((prev) => ({ ...prev, produtor: lista[0] }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const premio = limparMoeda(formData.premioLiquido, 0);
+  const percentual = limparMoeda(formData.comissaoPercentual, 0);
+  const quantidadeParcelas = Math.max(
+    1,
+    limparMoeda(formData.quantidadeParcelas, 1)
+  );
+
+  const valorParcelaSeguro = premio / quantidadeParcelas;
+  const comissaoTotal = (premio * percentual) / 100;
+  const comissaoParcela = comissaoTotal / quantidadeParcelas;
 
   const searchLower = useMemo(() => searchTerm.toLowerCase(), [searchTerm]);
 
-  const propostasFiltradas = propostas.filter((p) => {
-    const produtor = ((p as any).produtor ?? '').toString().toLowerCase();
-    const propostaNumero = ((p as any).propostaNumero ?? '').toString();
-    const dataTransmissao = ((p as any).dataTransmissao ?? '').toString();
+  const listaPropostas = propostasBanco.length > 0 ? propostasBanco : propostas;
+
+const propostasFiltradas = listaPropostas.filter((p) => {
+    const produtor = (p.produtor ?? '').toString().toLowerCase();
+    const propostaNumero = (p.propostaNumero ?? '').toString();
+    const dataTransmissao = (p.dataTransmissao ?? '').toString();
 
     const matchSearch =
       p.segurado.toLowerCase().includes(searchLower) ||
@@ -143,10 +247,6 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const premio = Number.parseFloat(formData.premioLiquido) || 0;
-    const percentual = Number.parseFloat(formData.comissaoPercentual) || 0;
-    const comissao = (premio * percentual) / 100;
-
     const payload: Omit<Proposta, 'id' | 'dataCadastro'> = {
       segurado: formData.segurado,
       cpfCnpj: formData.cpfCnpj,
@@ -154,15 +254,17 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
       seguradora: formData.seguradora,
       tipo: formData.tipo,
       ramo: formData.ramo,
-
-      // ✅ novos campos
-      ...( { propostaNumero: formData.propostaNumero, dataTransmissao: formData.dataTransmissao } as any),
-
+      propostaNumero: formData.propostaNumero,
+      dataTransmissao: formData.dataTransmissao,
       premioLiquido: premio,
+      quantidadeParcelas,
+      valorParcelaSeguro,
       comissaoPercentual: percentual,
-      comissaoValor: comissao,
+      comissaoParcela,
+      comissaoValor: comissaoTotal,
       status: formData.status,
-      observacoes: formData.observacoes || undefined,
+statusSegurado: 'ATIVO',
+observacoes: formData.observacoes || undefined,
     };
 
     if (propostaEditando) {
@@ -182,16 +284,15 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
     setFormData({
       segurado: proposta.segurado,
       cpfCnpj: proposta.cpfCnpj,
-      produtor: (proposta as any).produtor || produtores[0] || 'IGO',
+      produtor: proposta.produtor || produtores[0] || 'IGO',
       seguradora: proposta.seguradora,
       tipo: proposta.tipo,
       ramo: proposta.ramo,
-
-      propostaNumero: (proposta as any).propostaNumero || '',
-      dataTransmissao: (proposta as any).dataTransmissao || '',
-
-      premioLiquido: proposta.premioLiquido.toString(),
-      comissaoPercentual: proposta.comissaoPercentual.toString(),
+      propostaNumero: proposta.propostaNumero || '',
+      dataTransmissao: proposta.dataTransmissao || '',
+      premioLiquido: formatarMoeda(proposta.premioLiquido || 0),
+      quantidadeParcelas: proposta.quantidadeParcelas?.toString() || '1',
+      comissaoPercentual: proposta.comissaoPercentual?.toString() || '20',
       observacoes: proposta.observacoes || '',
       status: proposta.status,
     });
@@ -208,12 +309,6 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
   const handleDadosPdfExtraidos = (dados: DadosPdfExtraidos) => {
     setPropostaEditando(null);
 
-    const premioLiquidoStr =
-      dados.premioLiquido === undefined || dados.premioLiquido === null ? '' : String(dados.premioLiquido);
-
-    const comissaoPercentualStr =
-      dados.comissaoPercentual === undefined || dados.comissaoPercentual === null ? '20' : String(dados.comissaoPercentual);
-
     setFormData({
       ...DEFAULT_FORM,
       segurado: dados.segurado || '',
@@ -224,29 +319,36 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
       ramo: dados.ramo || '',
       propostaNumero: dados.propostaNumero || '',
       dataTransmissao: dados.dataTransmissao || '',
-      premioLiquido: premioLiquidoStr,
-      comissaoPercentual: comissaoPercentualStr,
+      premioLiquido:
+        dados.premioLiquido === undefined || dados.premioLiquido === null
+          ? ''
+          : formatarMoeda(limparMoeda(dados.premioLiquido)),
+      quantidadeParcelas: '1',
+      comissaoPercentual:
+        dados.comissaoPercentual === undefined || dados.comissaoPercentual === null
+          ? '20'
+          : String(dados.comissaoPercentual),
       status: 'EMITIDA',
       observacoes: '',
     });
 
     setIsDialogOpen(true);
   };
-
-  return (
+    return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Propostas</h2>
-          <p className="text-slate-500">Gerencie todas as suas propostas de seguro</p>
+          <h2 className="text-2xl font-bold text-slate-900">Segurados</h2>
+          <p className="text-slate-500">
+            Gerencie segurados Anadem, parcelas e previsões de comissão
+          </p>
         </div>
 
         <div className="flex gap-2">
           <Button
             variant="outline"
             onClick={() => setIsPdfUploaderOpen(true)}
-            className="border-blue-500 text-blue-600 hover:bg-blue-50"
+            className="border-[#F47FA0] text-[#F47FA0] hover:bg-[#F6EAEA]"
           >
             <Upload className="w-4 h-4 mr-2" />
             Importar PDF
@@ -254,29 +356,34 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={handleNew} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+              <Button
+                onClick={handleNew}
+                className="bg-[#F47FA0] hover:bg-[#ec6f94] text-white"
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                Nova Proposta
+                Novo Segurado
               </Button>
             </DialogTrigger>
 
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-emerald-500" />
-                  {propostaEditando ? 'Editar Proposta' : 'Nova Proposta'}
+                  <FileText className="w-5 h-5 text-[#F47FA0]" />
+                  {propostaEditando ? 'Editar Segurado' : 'Novo Segurado'}
                 </DialogTitle>
               </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Segurado + CPF */}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="segurado">Nome do Segurado *</Label>
                     <Input
                       id="segurado"
                       value={formData.segurado}
-                      onChange={(e) => setFormData({ ...formData, segurado: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, segurado: e.target.value })
+                      }
                       placeholder="Nome completo"
                       required
                     />
@@ -287,27 +394,34 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
                     <Input
                       id="cpfCnpj"
                       value={formData.cpfCnpj}
-                      onChange={(e) => setFormData({ ...formData, cpfCnpj: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, cpfCnpj: e.target.value })
+                      }
                       placeholder="000.000.000-00"
                       required
                     />
                   </div>
                 </div>
 
-                {/* Produtor + Seguradora */}
                 <div className="grid grid-cols-2 gap-4">
+
                   <div className="space-y-2">
                     <Label htmlFor="produtor">Produtor *</Label>
+
                     <select
                       id="produtor"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
                       value={formData.produtor}
-                      onChange={(e) => setFormData({ ...formData, produtor: e.target.value })}
-                      required
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          produtor: e.target.value,
+                        })
+                      }
                     >
-                      {produtores.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
+                      {produtores.map((produtor) => (
+                        <option key={produtor} value={produtor}>
+                          {produtor}
                         </option>
                       ))}
                     </select>
@@ -315,35 +429,44 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
 
                   <div className="space-y-2">
                     <Label htmlFor="seguradora">Seguradora *</Label>
+
                     <select
                       id="seguradora"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
                       value={formData.seguradora}
-                      onChange={(e) => setFormData({ ...formData, seguradora: e.target.value })}
-                      required
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          seguradora: e.target.value,
+                        })
+                      }
                     >
-                      <option value="" disabled>
-                        Selecione...
-                      </option>
-                      {seguradoras.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
+                      <option value="">Selecione...</option>
+
+                      {seguradoras.map((seguradora) => (
+                        <option key={seguradora} value={seguradora}>
+                          {seguradora}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                {/* Tipo + Ramo */}
                 <div className="grid grid-cols-2 gap-4">
+
                   <div className="space-y-2">
                     <Label htmlFor="tipo">Tipo *</Label>
+
                     <select
                       id="tipo"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
                       value={formData.tipo}
-                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value as TipoProposta })}
-                      required
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          tipo: e.target.value as TipoProposta,
+                        })
+                      }
                     >
                       <option value="NOVO">Novo</option>
                       <option value="RENOVACAO">Renovação</option>
@@ -352,105 +475,193 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
 
                   <div className="space-y-2">
                     <Label htmlFor="ramo">Ramo *</Label>
+
                     <select
                       id="ramo"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
                       value={formData.ramo}
-                      onChange={(e) => setFormData({ ...formData, ramo: e.target.value })}
-                      required
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          ramo: e.target.value,
+                        })
+                      }
                     >
-                      <option value="" disabled>
-                        Selecione...
-                      </option>
-                      {ramos.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
+                      <option value="">Selecione...</option>
+
+                      {ramos.map((ramo) => (
+                        <option key={ramo} value={ramo}>
+                          {ramo}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                {/* Proposta + Data transmissão */}
                 <div className="grid grid-cols-2 gap-4">
+
                   <div className="space-y-2">
                     <Label htmlFor="propostaNumero">Proposta *</Label>
+
                     <Input
                       id="propostaNumero"
                       value={formData.propostaNumero}
-                      onChange={(e) => setFormData({ ...formData, propostaNumero: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          propostaNumero: e.target.value,
+                        })
+                      }
                       placeholder="Número da proposta"
-                      required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="dataTransmissao">Data de Transmissão *</Label>
+                    <Label htmlFor="dataTransmissao">
+                      Data de Transmissão *
+                    </Label>
+
                     <Input
                       id="dataTransmissao"
                       type="date"
                       value={formData.dataTransmissao}
-                      onChange={(e) => setFormData({ ...formData, dataTransmissao: e.target.value })}
-                      required
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          dataTransmissao: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 </div>
 
-                {/* Prêmio Líquido + Comissão % */}
                 <div className="grid grid-cols-2 gap-4">
+
                   <div className="space-y-2">
-                    <Label htmlFor="premioLiquido">Prêmio Líquido (R$) *</Label>
+                    <Label htmlFor="premioLiquido">
+                      Prêmio Líquido (R$) *
+                    </Label>
+
                     <Input
                       id="premioLiquido"
-                      type="number"
-                      step="0.01"
+                      type="text"
                       value={formData.premioLiquido}
-                      onChange={(e) => setFormData({ ...formData, premioLiquido: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          premioLiquido: formatarCampoMoeda(e.target.value),
+                        })
+                      }
                       placeholder="0,00"
-                      required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="comissaoPercentual">% Comissão *</Label>
+                    <Label htmlFor="quantidadeParcelas">
+                      Quantidade de Parcelas *
+                    </Label>
+
+                    <Input
+                      id="quantidadeParcelas"
+                      type="number"
+                      min="1"
+                      value={formData.quantidadeParcelas}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          quantidadeParcelas: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+
+                  <div className="space-y-2">
+                    <Label htmlFor="comissaoPercentual">
+                      % Comissão *
+                    </Label>
+
                     <Input
                       id="comissaoPercentual"
-                      type="number"
-                      step="0.01"
+                      type="text"
                       value={formData.comissaoPercentual}
-                      onChange={(e) => setFormData({ ...formData, comissaoPercentual: e.target.value })}
-                      placeholder="20"
-                      required
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          comissaoPercentual: formatarPercentualDigitado(
+                            e.target.value
+                          ),
+                        })
+                      }
                     />
                   </div>
-                </div>
 
-                {/* Status */}
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="status">Status *</Label>
-                    <select
-                      id="status"
-                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as StatusProposta })}
-                      required
-                    >
-                      <option value="EMITIDA">Emitida</option>
-                      <option value="PAGA">Paga</option>
-                      <option value="CANCELADA">Cancelada</option>
-                    </select>
+                    <Label>Resumo da Comissão</Label>
+
+                    <div className="rounded-xl border bg-slate-50 p-4 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Parcela Seguro:</span>
+
+                        <strong>
+                          R$ {formatarMoeda(valorParcelaSeguro)}
+                        </strong>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <span>Comissão por Parcela:</span>
+
+                        <strong className="text-emerald-600">
+                          R$ {formatarMoeda(comissaoParcela)}
+                        </strong>
+                      </div>
+
+                      <div className="flex justify-between border-t pt-2">
+                        <span>Comissão Total:</span>
+
+                        <strong className="text-blue-600">
+                          R$ {formatarMoeda(comissaoTotal)}
+                        </strong>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Observações */}
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status *</Label>
+
+                  <select
+                    id="status"
+                    className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        status: e.target.value as StatusProposta,
+                      })
+                    }
+                  >
+                    <option value="EMITIDA">Emitida</option>
+                    <option value="PAGA">Paga</option>
+                    <option value="CANCELADA">Cancelada</option>
+                  </select>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="observacoes">Observações</Label>
+
                   <textarea
                     id="observacoes"
                     value={formData.observacoes}
-                    onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                    className="w-full min-h-[80px] px-3 py-2 border rounded-md text-sm"
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        observacoes: e.target.value,
+                      })
+                    }
+                    className="w-full min-h-[100px] rounded-md border border-slate-200 px-3 py-2 text-sm"
                     placeholder="Informações adicionais..."
                   />
                 </div>
@@ -461,8 +672,14 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
                       Cancelar
                     </Button>
                   </DialogClose>
-                  <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600">
-                    {propostaEditando ? 'Salvar Alterações' : 'Cadastrar Proposta'}
+
+                  <Button
+                    type="submit"
+                    className="bg-[#F47FA0] hover:bg-[#ec6f94] text-white"
+                  >
+                    {propostaEditando
+                      ? 'Salvar Alterações'
+                      : 'Cadastrar Proposta'}
                   </Button>
                 </DialogFooter>
               </form>
@@ -470,183 +687,161 @@ export function Propostas({ propostas, onAdicionar, onExcluir, onEditar }: Propo
           </Dialog>
         </div>
       </div>
+            <PdfUploader
+        open={isPdfUploaderOpen}
+        onOpenChange={setIsPdfUploaderOpen}
+        onDadosExtraidos={handleDadosPdfExtraidos}
+      />
 
-      {/* Filtros */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input
-                  placeholder="Buscar por segurado, proposta, seguradora ou produtor..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5 text-[#F47FA0]" />
+            Segurados Cadastrados
+            <Badge variant="secondary">
+              {propostasFiltradas.length}
+            </Badge>
+          </CardTitle>
+
+          <div className="flex flex-col md:flex-row gap-4 mt-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+
+              <Input
+                placeholder="Buscar segurado, seguradora ou proposta..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
 
-            <div className="w-[180px]">
-              <label className="sr-only" htmlFor="filtroTipo">
-                Tipo
-              </label>
-              <div className="relative">
-                <Filter className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <select
-                  id="filtroTipo"
-                  className="w-full h-10 rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
-                  value={filtroTipo}
-                  onChange={(e) => setFiltroTipo(e.target.value)}
-                >
-                  <option value="todos">Todos os tipos</option>
-                  <option value="NOVO">Novo</option>
-                  <option value="RENOVACAO">Renovação</option>
-                </select>
-              </div>
-            </div>
+            <div className="flex gap-2">
+              <select
+                value={filtroTipo}
+                onChange={(e) => setFiltroTipo(e.target.value)}
+                className="px-3 py-2 border border-slate-200 rounded-md"
+              >
+                <option value="todos">Todos os tipos</option>
+                <option value="NOVO">Novo</option>
+                <option value="RENOVACAO">Renovação</option>
+              </select>
 
-            <div className="w-[180px]">
-              <label className="sr-only" htmlFor="filtroStatus">
-                Status
-              </label>
-              <div className="relative">
-                <Tag className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <select
-                  id="filtroStatus"
-                  className="w-full h-10 rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
-                  value={filtroStatus}
-                  onChange={(e) => setFiltroStatus(e.target.value)}
-                >
-                  <option value="todos">Todos os status</option>
-                  <option value="EMITIDA">Emitida</option>
-                  <option value="PAGA">Paga</option>
-                  <option value="CANCELADA">Cancelada</option>
-                </select>
-              </div>
+              <select
+                value={filtroStatus}
+                onChange={(e) => setFiltroStatus(e.target.value)}
+                className="px-3 py-2 border border-slate-200 rounded-md"
+              >
+                <option value="todos">Todos status</option>
+                <option value="EMITIDA">Emitida</option>
+                <option value="PAGA">Paga</option>
+                <option value="CANCELADA">Cancelada</option>
+              </select>
+
+              <Button variant="outline" size="icon">
+                <Filter className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista de Propostas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center justify-between">
-            <span>Lista de Propostas</span>
-            <Badge variant="secondary">{propostasFiltradas.length} propostas</Badge>
-          </CardTitle>
         </CardHeader>
 
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Segurado</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Produtor</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Seguradora</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Tipo</th>
-                  <th className="text-left py-3 px-4 font-medium text-slate-600">Ramo</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">Prêmio</th>
-                  <th className="text-right py-3 px-4 font-medium text-slate-600">Comissão</th>
-                  <th className="text-center py-3 px-4 font-medium text-slate-600">Status</th>
-                  <th className="text-center py-3 px-4 font-medium text-slate-600">Ações</th>
-                </tr>
-              </thead>
+          <div className="space-y-4">
+            {propostasFiltradas.map((proposta, index) => (
+              <div
+                key={proposta.id || index}
+                className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between">
 
-              <tbody>
-                {propostasFiltradas.map((proposta) => (
-                  <tr
-                    key={proposta.id}
-                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-slate-400" />
-                        <div>
-                          <p className="font-medium text-slate-900">{proposta.segurado}</p>
-                          <p className="text-xs text-slate-500">{proposta.cpfCnpj}</p>
-                        </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-semibold text-lg text-slate-900">
+                        {proposta.segurado}
+                      </h3>
+
+                      <StatusBadge status={proposta.status} />
+
+                      <Badge
+  className={
+    proposta.statusSegurado === 'ATIVO'
+      ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+      : proposta.statusSegurado === 'EM_OBSERVACAO'
+      ? 'bg-amber-100 text-amber-700 border border-amber-300'
+      : 'bg-red-100 text-red-700 border border-red-300'
+  }
+>
+  {proposta.statusSegurado === 'ATIVO'
+    ? 'Ativo'
+    : proposta.statusSegurado === 'EM_OBSERVACAO'
+    ? 'Em Observação'
+    : 'Cancelado'}
+</Badge>
+
+                      <Badge
+                        variant={
+                          proposta.tipo === 'NOVO'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                      >
+                        {proposta.tipo === 'NOVO'
+                          ? 'Novo'
+                          : 'Renovação'}
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <Building2 className="w-4 h-4" />
+                        {proposta.seguradora}
                       </div>
-                    </td>
 
-                    <td className="py-3 px-4 text-sm font-medium text-slate-700">
-                      {(proposta as any).produtor}
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm">{proposta.seguradora}</span>
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <Tag className="w-4 h-4" />
+                        {proposta.ramo}
                       </div>
-                    </td>
 
-                    <td className="py-3 px-4">
-                      <StatusBadge status={proposta.tipo} type="tipo" />
-                    </td>
-
-                    <td className="py-3 px-4 text-sm">{proposta.ramo}</td>
-
-                    <td className="py-3 px-4 text-right font-medium">
-                      R$ {proposta.premioLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </td>
-
-                    <td className="py-3 px-4 text-right">
-                      <div>
-                        <p className="font-medium text-emerald-600">
-                          R$ {proposta.comissaoValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                        <p className="text-xs text-slate-500">{proposta.comissaoPercentual}%</p>
+                      <div className="text-slate-600">
+                        <span className="font-medium">
+                          Prêmio:
+                        </span>{' '}
+                        R$ {formatarMoeda(Number(proposta.premioLiquido || 0))}
                       </div>
-                    </td>
 
-                    <td className="py-3 px-4 text-center">
-                      <StatusBadge status={proposta.status} type="proposta" />
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(proposta)}
-                          className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onExcluir(proposta.id)}
-                          className="text-rose-500 hover:text-rose-600 hover:bg-rose-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <div className="text-emerald-600 font-medium">
+                        Comissão:
+                        {' '}
+                        R$ {formatarMoeda(Number(proposta.comissaoValor || 0))}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
 
-            {propostasFiltradas.length === 0 && (
-              <div className="text-center py-12">
-                <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">Nenhuma proposta encontrada</p>
+                  <div className="flex gap-2 ml-4">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEdit(proposta)}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => onExcluir(proposta.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </CardContent>
       </Card>
-
-      {/* PDF Uploader */}
-      <PdfUploader
-        isOpen={isPdfUploaderOpen}
-        onClose={() => setIsPdfUploaderOpen(false)}
-        onDadosExtraidos={handleDadosPdfExtraidos}
-      />
     </div>
   );
 }

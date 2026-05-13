@@ -1,13 +1,8 @@
 export const PRODUTORES_PADRAO: readonly string[] = [
-  'IGO',
   'RAQUEL',
-  'VICTOR',
-  'JAN',
-  'VINICIUS',
-  'THAIS',
+  'IGO',
   'PROD.01',
   'PROD.02',
-  'PROD.03',
 ];
 
 export const PRODUTORES_STORAGE_KEY = 'igo.produtores.v1';

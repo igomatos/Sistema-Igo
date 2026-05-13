@@ -4,6 +4,8 @@ export type StatusComissao = 'PENDENTE' | 'PARCIAL' | 'PAGO';
 
 export type StatusProposta = 'EMITIDA' | 'PAGA' | 'CANCELADA';
 
+export type StatusSegurado = 'ATIVO' | 'CANCELADO' | 'EM_OBSERVACAO';
+
 export interface Proposta {
   id: string;
   dataCadastro: string;
@@ -20,10 +22,21 @@ export interface Proposta {
   dataTransmissao: string; // yyyy-mm-dd
 
   premioLiquido: number;
+
+  quantidadeParcelas: number;
+
+  valorParcelaSeguro: number;
+
   comissaoPercentual: number;
+
+  comissaoParcela: number;
+
   comissaoValor: number;
 
   status: StatusProposta;
+
+  statusSegurado: StatusSegurado;
+
   observacoes?: string;
 }
 
@@ -32,7 +45,7 @@ export interface PagamentoComissao {
   propostaId: string;
   dataPagamento: string;
   valorPago: number;
-  referencia: string; // Ex: "05/01/2025" ou "20/01/2025"
+  referencia: string;
 }
 
 export interface ComissaoProposta {

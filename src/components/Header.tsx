@@ -1,51 +1,55 @@
-import logo from "../assets/logo-igo.png";
+import { Download } from 'lucide-react';
+import { exportarBackup } from '@/lib/storage';
 
-export function Header() {
+interface HeaderProps {
+  onLogout: () => void;
+}
+
+export function Header({ onLogout }: HeaderProps) {
+
+  const handleBackup = () => {
+    exportarBackup();
+  };
+
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
-      {/* Faixa de destaque */}
-      <div className="h-1 w-full bg-gradient-to-r from-blue-700 via-blue-600 to-sky-400" />
+    <header className="sticky top-0 z-40 bg-white border-b border-[#EADDE1]">
 
-      <div className="h-24 px-6 flex items-center justify-between">
-        {/* Marca */}
+      {/* Linha superior */}
+      <div className="h-1.5 w-full bg-[#F47FA0]" />
+
+      {/* Conteúdo */}
+      <div className="h-24 px-10 flex items-center justify-between">
+
+        <div />
+
         <div className="flex items-center gap-4">
-          {/* Logo como ícone (sem virar refém do branco do PNG) */}
-          <div className="h-14 w-14 rounded-2xl bg-white shadow-sm border border-slate-200 flex items-center justify-center p-2">
-            <img
-              src={logo}
-              alt="IGO MATOS"
-              className="h-12 w-auto object-contain"
-            />
-          </div>
 
-          {/* Nome com MUITO mais destaque */}
-          <div className="leading-tight">
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-extrabold tracking-tight text-slate-900">
-                IGO MATOS
-              </p>
-              <span className="hidden sm:inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 text-xs font-semibold">
-                Sistema IGO
-              </span>
-            </div>
-
-            <p className="text-lg font-bold tracking-tight text-slate-800 -mt-0.5">
-              SEGUROS
-            </p>
-
-            <p className="text-sm text-slate-600 mt-1">
-              Gestão de Propostas e Comissões
-            </p>
-          </div>
-        </div>
-
-        {/* Status */}
-        <div className="text-xs text-slate-700">
-          <span className="px-3 py-1 rounded-full bg-slate-100 border border-slate-200 font-medium">
+          {/* Ambiente */}
+          <span className="px-5 py-2 rounded-full bg-[#F6F4F5] text-slate-700 text-sm font-semibold border border-[#EADDE1]">
             Ambiente Local
           </span>
+
+          {/* Backup */}
+          <button
+            onClick={handleBackup}
+            className="flex items-center gap-2 px-5 py-2 rounded-full bg-white border border-[#EADDE1] text-[#111827] text-sm font-bold hover:bg-[#F6EAEA] transition-all duration-300"
+          >
+            <Download className="w-4 h-4" />
+            Backup
+          </button>
+
+          {/* Logout */}
+          <button
+            onClick={onLogout}
+            className="px-5 py-2 rounded-full bg-[#F47FA0] text-white text-sm font-bold shadow-lg shadow-pink-200 hover:bg-[#ec6f94] transition-all duration-300"
+          >
+            Sair
+          </button>
+
         </div>
+
       </div>
+
     </header>
   );
 }

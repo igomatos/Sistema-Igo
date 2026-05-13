@@ -13,52 +13,78 @@ interface MetricCardProps {
 }
 
 const colorClasses = {
-  emerald: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-  blue: 'bg-blue-50 text-blue-600 border-blue-200',
-  amber: 'bg-amber-50 text-amber-600 border-amber-200',
-  rose: 'bg-rose-50 text-rose-600 border-rose-200',
-  violet: 'bg-violet-50 text-violet-600 border-violet-200',
+  emerald: 'bg-white text-[#111827] border-[#EADDE1]',
+  blue: 'bg-white text-[#111827] border-[#EADDE1]',
+  amber: 'bg-white text-[#111827] border-[#EADDE1]',
+  rose: 'bg-white text-[#111827] border-[#EADDE1]',
+  violet: 'bg-white text-[#111827] border-[#EADDE1]',
 };
 
 const iconBgClasses = {
-  emerald: 'bg-emerald-100',
-  blue: 'bg-blue-100',
-  amber: 'bg-amber-100',
-  rose: 'bg-rose-100',
-  violet: 'bg-violet-100',
+  emerald: 'bg-[#F6EAEA] text-[#F47FA0]',
+  blue: 'bg-[#F6EAEA] text-[#F47FA0]',
+  amber: 'bg-[#F6EAEA] text-[#F47FA0]',
+  rose: 'bg-[#F6EAEA] text-[#F47FA0]',
+  violet: 'bg-[#F6EAEA] text-[#F47FA0]',
 };
 
-export function MetricCard({ 
-  title, 
-  value, 
-  subtitle, 
-  icon, 
-  trend, 
+export function MetricCard({
+  title,
+  value,
+  subtitle,
+  icon,
+  trend,
   trendUp,
-  color 
+  color
 }: MetricCardProps) {
   return (
-    <Card className={cn("border-2 transition-all duration-200 hover:shadow-lg", colorClasses[color])}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBgClasses[color])}>
+    <Card
+      className={cn(
+        "group border bg-white rounded-3xl shadow-sm overflow-hidden",
+        "transition-all duration-500 ease-out",
+        "hover:shadow-2xl hover:-translate-y-1 hover:border-[#F47FA0]/40",
+        colorClasses[color]
+      )}
+    >
+      <CardContent className="p-6 relative">
+        <div className="absolute -right-10 -top-10 w-28 h-28 rounded-full bg-[#F6EAEA] opacity-0 group-hover:opacity-70 transition-all duration-500" />
+
+        <div className="flex items-start justify-between relative z-10">
+          <div
+            className={cn(
+              "w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm",
+              "transition-all duration-500 group-hover:scale-110 group-hover:rotate-3",
+              iconBgClasses[color]
+            )}
+          >
             {icon}
           </div>
+
           {trend && (
-            <span className={cn(
-              "text-xs font-medium px-2 py-1 rounded-full",
-              trendUp ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-            )}>
+            <span
+              className={cn(
+                "text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-500",
+                trendUp
+                  ? "bg-[#F6EAEA] text-[#F47FA0] group-hover:bg-[#F47FA0] group-hover:text-white"
+                  : "bg-rose-50 text-rose-700"
+              )}
+            >
               {trend}
             </span>
           )}
         </div>
-        
-        <div className="mt-4">
-          <p className="text-sm font-medium opacity-80">{title}</p>
-          <p className="text-2xl font-bold mt-1">{value}</p>
+
+        <div className="mt-5 relative z-10">
+          <p className="text-sm font-semibold text-slate-500">{title}</p>
+
+          <p className="text-3xl font-black text-[#111827] mt-2 tracking-tight">
+            {value}
+          </p>
+
           {subtitle && (
-            <p className="text-xs opacity-70 mt-1">{subtitle}</p>
+            <p className="text-sm text-slate-500 mt-2">
+              {subtitle}
+            </p>
           )}
         </div>
       </CardContent>

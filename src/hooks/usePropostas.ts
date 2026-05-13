@@ -1,14 +1,138 @@
 import { useEffect, useMemo, useCallback, useState } from 'react';
-import type { Proposta, PagamentoComissao, ComissaoProposta, StatusComissao } from '@/types';
+import type {
+  Proposta,
+  PagamentoComissao,
+  ComissaoProposta,
+  StatusComissao
+} from '@/types';
+
 import { propostasMock, pagamentosMock } from '@/data/mockData';
-import { loadPagamentos, loadPropostas, savePagamentos, savePropostas } from '@/lib/storage';
+import {
+  loadPagamentos,
+  loadPropostas,
+  savePagamentos,
+  savePropostas
+} from '@/lib/storage';
+
+import { supabase } from '@/lib/supabase';
+
+function propostaParaBanco(proposta: Proposta) {
+  return {
+    id: proposta.id,
+    segurado: proposta.segurado,
+    cpf_cnpj: proposta.cpfCnpj,
+    produtor: proposta.produtor,
+    seguradora: proposta.seguradora,
+    tipo: proposta.tipo,
+    ramo: proposta.ramo,
+    premio_liquido: proposta.premioLiquido,
+    quantidade_parcelas: proposta.quantidadeParcelas,
+    valor_parcela_seguro: proposta.valorParcelaSeguro,
+    comissao_percentual: proposta.comissaoPercentual,
+    comissao_parcela: proposta.comissaoParcela,
+    comissao_valor: proposta.comissaoValor,
+    status: proposta.status,
+    status_segurado: proposta.statusSegurado,
+    observacoes: proposta.observacoes,
+    data_cadastro: proposta.dataCadastro
+  };
+}
+
+function propostaDoBanco(row: any): Proposta {
+  return {
+    id: row.id,
+    segurado: row.segurado,
+    cpfCnpj: row.cpf_cnpj,
+    produtor: row.produtor,
+    seguradora: row.seguradora,
+    tipo: row.tipo,
+    ramo: row.ramo,
+    premioLiquido: Number(row.premio_liquido || 0),
+    quantidadeParcelas: Number(row.quantidade_parcelas || 1),
+    valorParcelaSeguro: Number(row.valor_parcela_seguro || 0),
+    comissaoPercentual: Number(row.comissao_percentual || 0),
+    comissaoParcela: Number(row.comissao_parcela || row.comissao_valor || 0),
+    comissaoValor: Number(row.comissao_valor || 0),
+    status: row.status,
+    statusSegurado: row.status_segurado || 'ATIVO',
+    observacoes: row.observacoes,
+    dataCadastro: row.data_cadastro
+  };
+}
+
+function pagamentoParaBanco(pagamento: PagamentoComissao) {
+  return {
+    id: pagamento.id,
+    proposta_id: pagamento.propostaId,
+    data_pagamento: pagamento.dataPagamento,
+    valor_pago: pagamento.valorPago,
+    referencia: pagamento.referencia
+  };
+}
+
+function pagamentoDoBanco(row: any): PagamentoComissao {
+  return {
+    id: row.id,
+    propostaId: row.proposta_id,
+    dataPagamento: row.data_pagamento,
+    valorPago: Number(row.valor_pago || 0),
+    referencia: row.referencia
+  };
+}
 
 export function usePropostas() {
-  // Carrega do navegador (localStorage). Se ainda não existir nada, usa os dados de exemplo.
-  const [propostas, setPropostas] = useState<Proposta[]>(() => loadPropostas(propostasMock));
-  const [pagamentos, setPagamentos] = useState<PagamentoComissao[]>(() => loadPagamentos(pagamentosMock));
+  const [propostas, setPropostas] = useState<Proposta[]>(() =>
+    loadPropostas(propostasMock)
+  );
 
-  // Sempre que mudar, salva automaticamente.
+  const [pagamentos, setPagamentos] = useState<PagamentoComissao[]>(() =>
+    loadPagamentos(pagamentosMock)
+  );
+
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    async function carregarDadosOnline() {
+      try {
+        const { data: propostasOnline, error: erroPropostas } = await supabase
+          .from('propostas')
+          .select('*')
+          .order('data_cadastro', { ascending: false });
+
+        if (erroPropostas) {
+          console.error('Erro ao carregar propostas do Supabase:', erroPropostas.message);
+          return;
+        }
+
+        const { data: pagamentosOnline, error: erroPagamentos } = await supabase
+          .from('pagamentos')
+          .select('*');
+
+        if (erroPagamentos) {
+          console.error('Erro ao carregar pagamentos do Supabase:', erroPagamentos.message);
+          return;
+        }
+
+        const propostasConvertidas = (propostasOnline || []).map(propostaDoBanco);
+        const pagamentosConvertidos = (pagamentosOnline || []).map(pagamentoDoBanco);
+
+        if (propostasConvertidas.length > 0) {
+          setPropostas(propostasConvertidas);
+          savePropostas(propostasConvertidas);
+        }
+
+        if (pagamentosConvertidos.length > 0) {
+          setPagamentos(pagamentosConvertidos);
+          savePagamentos(pagamentosConvertidos);
+        }
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregarDadosOnline();
+  }, []);
+
   useEffect(() => {
     savePropostas(propostas);
   }, [propostas]);
@@ -17,17 +141,26 @@ export function usePropostas() {
     savePagamentos(pagamentos);
   }, [pagamentos]);
 
-  // Calcular comissões com status
   const comissoes = useMemo((): ComissaoProposta[] => {
-    return propostas.map(proposta => {
-      const pagamentosProposta = pagamentos.filter(p => p.propostaId === proposta.id);
-      const totalPago = pagamentosProposta.reduce((sum, p) => sum + p.valorPago, 0);
+    return propostas.map((proposta) => {
+      const pagamentosProposta = pagamentos.filter(
+        (p) => p.propostaId === proposta.id
+      );
+
+      const totalPago = pagamentosProposta.reduce(
+        (sum, p) => sum + p.valorPago,
+        0
+      );
+
       const saldoDevedor = proposta.comissaoValor - totalPago;
-      const percentualPago = proposta.comissaoValor > 0 
-        ? (totalPago / proposta.comissaoValor) * 100 
-        : 0;
+
+      const percentualPago =
+        proposta.comissaoValor > 0
+          ? (totalPago / proposta.comissaoValor) * 100
+          : 0;
 
       let status: StatusComissao;
+
       if (totalPago === 0) {
         status = 'PENDENTE';
       } else if (totalPago >= proposta.comissaoValor) {
@@ -47,15 +180,14 @@ export function usePropostas() {
     });
   }, [propostas, pagamentos]);
 
-  // Métricas do dashboard
   const metricas = useMemo(() => {
     const totalPropostas = propostas.length;
     const totalPremio = propostas.reduce((sum, p) => sum + p.premioLiquido, 0);
     const totalComissao = propostas.reduce((sum, p) => sum + p.comissaoValor, 0);
     const comissaoRecebida = comissoes.reduce((sum, c) => sum + c.totalPago, 0);
     const comissaoPendente = totalComissao - comissaoRecebida;
-    const propostasNovas = propostas.filter(p => p.tipo === 'NOVO').length;
-    const propostasRenovacao = propostas.filter(p => p.tipo === 'RENOVACAO').length;
+    const propostasNovas = propostas.filter((p) => p.tipo === 'NOVO').length;
+    const propostasRenovacao = propostas.filter((p) => p.tipo === 'RENOVACAO').length;
 
     return {
       totalPropostas,
@@ -68,70 +200,125 @@ export function usePropostas() {
     };
   }, [propostas, comissoes]);
 
-  // Adicionar nova proposta
-  const adicionarProposta = useCallback((novaProposta: Omit<Proposta, 'id' | 'dataCadastro'>) => {
-    const proposta: Proposta = {
-      ...novaProposta,
-      id: Date.now().toString(),
-      dataCadastro: new Date().toISOString().split('T')[0]
-    };
-    setPropostas(prev => [proposta, ...prev]);
-    return proposta;
+  const adicionarProposta = useCallback(
+    async (novaProposta: Omit<Proposta, 'id' | 'dataCadastro'>) => {
+      const proposta: Proposta = {
+        ...novaProposta,
+        id: Date.now().toString(),
+       dataCadastro: new Date().toISOString().split('T')[0],
+statusSegurado: 'ATIVO'
+      };
+
+      setPropostas((prev) => [proposta, ...prev]);
+
+      const { error } = await supabase
+        .from('propostas')
+        .insert(propostaParaBanco(proposta));
+
+      if (error) {
+        console.error('Erro ao salvar proposta no Supabase:', error.message);
+      }
+
+      return proposta;
+    },
+    []
+  );
+
+  const adicionarPagamento = useCallback(
+    async (propostaId: string, valor: number, data: string) => {
+      const proposta = propostas.find((p) => p.id === propostaId);
+
+      if (!proposta) return null;
+
+      const pagamentosExistentes = pagamentos.filter(
+        (p) => p.propostaId === propostaId
+      );
+
+      const totalPago = pagamentosExistentes.reduce(
+        (sum, p) => sum + p.valorPago,
+        0
+      );
+
+      if (totalPago + valor > proposta.comissaoValor) {
+        throw new Error('Valor do pagamento excede a comissão total');
+      }
+
+      const dataObj = new Date(data);
+      const dia = dataObj.getDate();
+      const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+      const ano = dataObj.getFullYear();
+      const referencia = `${dia <= 15 ? '05' : '20'}/${mes}/${ano}`;
+
+      const pagamento: PagamentoComissao = {
+        id: Date.now().toString(),
+        propostaId,
+        dataPagamento: data,
+        valorPago: valor,
+        referencia
+      };
+
+      setPagamentos((prev) => [...prev, pagamento]);
+
+      const { error } = await supabase
+        .from('pagamentos')
+        .insert(pagamentoParaBanco(pagamento));
+
+      if (error) {
+        console.error('Erro ao salvar pagamento no Supabase:', error.message);
+      }
+
+      return pagamento;
+    },
+    [propostas, pagamentos]
+  );
+
+  const excluirProposta = useCallback(async (id: string) => {
+    setPropostas((prev) => prev.filter((p) => p.id !== id));
+    setPagamentos((prev) => prev.filter((p) => p.propostaId !== id));
+
+    await supabase.from('pagamentos').delete().eq('proposta_id', id);
+    await supabase.from('propostas').delete().eq('id', id);
   }, []);
 
-  // Adicionar pagamento
-  const adicionarPagamento = useCallback((propostaId: string, valor: number, data: string) => {
-    const proposta = propostas.find(p => p.id === propostaId);
-    if (!proposta) return null;
+  const excluirPagamento = useCallback(async (id: string) => {
+    setPagamentos((prev) => prev.filter((p) => p.id !== id));
 
-    const pagamentosExistentes = pagamentos.filter(p => p.propostaId === propostaId);
-    const totalPago = pagamentosExistentes.reduce((sum, p) => sum + p.valorPago, 0);
-    
-    if (totalPago + valor > proposta.comissaoValor) {
-      throw new Error('Valor do pagamento excede a comissão total');
-    }
-
-    const dataObj = new Date(data);
-    const dia = dataObj.getDate();
-    const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
-    const ano = dataObj.getFullYear();
-    const referencia = `${dia <= 15 ? '05' : '20'}/${mes}/${ano}`;
-
-    const pagamento: PagamentoComissao = {
-      id: Date.now().toString(),
-      propostaId,
-      dataPagamento: data,
-      valorPago: valor,
-      referencia
-    };
-
-    setPagamentos(prev => [...prev, pagamento]);
-    return pagamento;
-  }, [propostas, pagamentos]);
-
-  // Excluir proposta
-  const excluirProposta = useCallback((id: string) => {
-    setPropostas(prev => prev.filter(p => p.id !== id));
-    setPagamentos(prev => prev.filter(p => p.propostaId !== id));
+    await supabase.from('pagamentos').delete().eq('id', id);
   }, []);
 
-  // Excluir pagamento
-  const excluirPagamento = useCallback((id: string) => {
-    setPagamentos(prev => prev.filter(p => p.id !== id));
-  }, []);
+  const editarProposta = useCallback(
+    async (id: string, dados: Partial<Proposta>) => {
+      setPropostas((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, ...dados } : p))
+      );
 
-  // Editar proposta
-  const editarProposta = useCallback((id: string, dados: Partial<Proposta>) => {
-    setPropostas(prev => prev.map(p => 
-      p.id === id ? { ...p, ...dados } : p
-    ));
-  }, []);
+      const propostaAtualizada = propostas.find((p) => p.id === id);
+
+      if (!propostaAtualizada) return;
+
+      const propostaFinal = {
+        ...propostaAtualizada,
+        ...dados
+      };
+
+      const { error } = await supabase
+        .from('propostas')
+        .update(propostaParaBanco(propostaFinal))
+        .eq('id', id);
+
+      if (error) {
+        console.error('Erro ao editar proposta no Supabase:', error.message);
+      }
+    },
+    [propostas]
+  );
 
   return {
     propostas,
     pagamentos,
     comissoes,
     metricas,
+    carregando,
     adicionarProposta,
     adicionarPagamento,
     excluirProposta,
