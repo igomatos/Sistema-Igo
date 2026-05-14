@@ -169,6 +169,7 @@ useEffect(() => {
       comissaoValor: Number(row.comissao_valor || 0),
       status: row.status || 'EMITIDA',
       statusSegurado: row.status_segurado || 'ATIVO',
+      gratuidade: row.gratuidade || false,
       observacoes: row.observacoes || '',
       dataCadastro: row.data_cadastro || '',
     }));

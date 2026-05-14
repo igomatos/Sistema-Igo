@@ -33,6 +33,7 @@ function propostaParaBanco(proposta: Proposta) {
     comissao_valor: proposta.comissaoValor,
     status: proposta.status,
     status_segurado: proposta.statusSegurado || 'ATIVO',
+    gratuidade: proposta.gratuidade || false,
     observacoes: proposta.observacoes,
     data_cadastro: proposta.dataCadastro
   };
@@ -57,6 +58,7 @@ function propostaDoBanco(row: any): Proposta {
     comissaoValor: Number(row.comissao_valor || 0),
     status: row.status,
     statusSegurado: row.status_segurado || 'ATIVO',
+    gratuidade: row.gratuidade || false,
     observacoes: row.observacoes,
     dataCadastro: row.data_cadastro
   };
