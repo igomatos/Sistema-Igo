@@ -9,7 +9,6 @@ import {
   User,
   Building2,
   Tag,
-  Upload,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -304,35 +303,7 @@ observacoes: formData.observacoes || undefined,
     setIsDialogOpen(true);
   };
 
-  const handleDadosPdfExtraidos = (dados: DadosPdfExtraidos) => {
-    setPropostaEditando(null);
-
-    setFormData({
-      ...DEFAULT_FORM,
-      segurado: dados.segurado || '',
-      cpfCnpj: dados.cpfCnpj || '',
-      produtor: dados.produtor || produtores[0] || 'IGO',
-      seguradora: dados.seguradora || '',
-      tipo: 'NOVO',
-      ramo: dados.ramo || '',
-      propostaNumero: dados.propostaNumero || '',
-      dataTransmissao: dados.dataTransmissao || '',
-      premioLiquido:
-        dados.premioLiquido === undefined || dados.premioLiquido === null
-          ? ''
-          : formatarMoeda(limparMoeda(dados.premioLiquido)),
-      quantidadeParcelas: '1',
-      comissaoPercentual:
-        dados.comissaoPercentual === undefined || dados.comissaoPercentual === null
-          ? '20'
-          : String(dados.comissaoPercentual),
-      status: 'EMITIDA',
-      observacoes: '',
-    });
-
-    setIsDialogOpen(true);
-  };
-    return (
+      return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
