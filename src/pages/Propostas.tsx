@@ -687,11 +687,9 @@ observacoes: formData.observacoes || undefined,
           </Dialog>
         </div>
       </div>
-            <PdfUploader
-        open={isPdfUploaderOpen}
-        onOpenChange={setIsPdfUploaderOpen}
-        onDadosExtraidos={handleDadosPdfExtraidos}
-      />
+            <<PdfUploader
+  onDadosExtraidos={handleDadosPdfExtraidos}
+/>
 
       <Card className="border-0 shadow-sm">
         <CardHeader>

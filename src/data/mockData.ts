@@ -11,7 +11,7 @@ export const seguradoras = [
   'HDI Seguros',
   'Azul Seguros',
   'Sompo Seguros',
-  'Mitsui Sumitomo'
+  'Mitsui Sumitomo',
 ];
 
 export const ramos = [
@@ -24,7 +24,7 @@ export const ramos = [
   'Automóvel',
   'Residencial',
   'Transporte',
-  'Riscos Diversos'
+  'Riscos Diversos',
 ];
 
 export const propostasMock: Proposta[] = [
@@ -34,16 +34,20 @@ export const propostasMock: Proposta[] = [
     segurado: 'Dr. João Silva',
     cpfCnpj: '123.456.789-00',
     produtor: 'IGO MATOS',
-    seguradora: 'ANADEM',
+    seguradora: 'Anadem',
     tipo: 'NOVO',
     ramo: 'RC Médico',
     propostaNumero: 'ANAD-0001',
     dataTransmissao: '2025-01-10',
     premioLiquido: 3500,
+    quantidadeParcelas: 12,
+    valorParcelaSeguro: 291.67,
     comissaoPercentual: 20,
+    comissaoParcela: 58.33,
     comissaoValor: 700,
     status: 'EMITIDA',
-    observacoes: 'Exemplo ANADEM para testes do sistema'
+    statusSegurado: 'ATIVO',
+    observacoes: 'Exemplo Anadem para testes do sistema',
   },
   {
     id: '2',
@@ -51,16 +55,20 @@ export const propostasMock: Proposta[] = [
     segurado: 'Dra. Maria Santos',
     cpfCnpj: '987.654.321-00',
     produtor: 'RAQUEL',
-    seguradora: 'ANADEM',
+    seguradora: 'Anadem',
     tipo: 'RENOVACAO',
     ramo: 'RC Médico',
     propostaNumero: 'ANAD-0002',
     dataTransmissao: '2025-01-12',
     premioLiquido: 4800,
+    quantidadeParcelas: 12,
+    valorParcelaSeguro: 400,
     comissaoPercentual: 20,
+    comissaoParcela: 80,
     comissaoValor: 960,
     status: 'EMITIDA',
-    observacoes: 'Renovação ANADEM'
+    statusSegurado: 'ATIVO',
+    observacoes: 'Renovação Anadem',
   },
   {
     id: '3',
@@ -68,16 +76,20 @@ export const propostasMock: Proposta[] = [
     segurado: 'Clínica ABC Ltda',
     cpfCnpj: '12.345.678/0001-90',
     produtor: 'IGO MATOS',
-    seguradora: 'ANADEM',
+    seguradora: 'Anadem',
     tipo: 'NOVO',
     ramo: 'RC Médico PJ',
     propostaNumero: 'ANAD-0003',
     dataTransmissao: '2025-01-15',
     premioLiquido: 12500,
+    quantidadeParcelas: 12,
+    valorParcelaSeguro: 1041.67,
     comissaoPercentual: 15,
+    comissaoParcela: 156.25,
     comissaoValor: 1875,
     status: 'EMITIDA',
-    observacoes: 'PJ médica ANADEM'
+    statusSegurado: 'ATIVO',
+    observacoes: 'PJ médica Anadem',
   },
   {
     id: '4',
@@ -91,10 +103,14 @@ export const propostasMock: Proposta[] = [
     propostaNumero: '789123456',
     dataTransmissao: '2025-01-18',
     premioLiquido: 2400,
+    quantidadeParcelas: 12,
+    valorParcelaSeguro: 200,
     comissaoPercentual: 25,
+    comissaoParcela: 50,
     comissaoValor: 600,
-    status: 'EMITIDA'
-  }
+    status: 'EMITIDA',
+    statusSegurado: 'ATIVO',
+  },
 ];
 
 export const pagamentosMock: PagamentoComissao[] = [
@@ -103,20 +119,20 @@ export const pagamentosMock: PagamentoComissao[] = [
     propostaId: '1',
     dataPagamento: '2025-01-20',
     valorPago: 350,
-    referencia: '20/01/2025'
+    referencia: '20/01/2025',
   },
   {
     id: 'p2',
     propostaId: '2',
     dataPagamento: '2025-01-20',
     valorPago: 960,
-    referencia: '20/01/2025'
+    referencia: '20/01/2025',
   },
   {
     id: 'p3',
     propostaId: '3',
     dataPagamento: '2025-01-20',
     valorPago: 937.5,
-    referencia: '20/01/2025'
-  }
+    referencia: '20/01/2025',
+  },
 ];
