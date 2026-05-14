@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Layout } from '@/components/Layout';
 
@@ -16,13 +16,14 @@ import { Toaster } from '@/components/ui/sonner';
 
 import { toast } from 'sonner';
 
+import { supabase } from '@/lib/supabase';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-    const {
+  const {
     propostas,
     comissoes,
     metricas,
@@ -33,14 +34,40 @@ function App() {
     editarProposta,
   } = usePropostas();
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
+  useEffect(() => {
 
+    async function verificarSessao() {
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      setIsLoggedIn(!!session);
+    }
+
+    verificarSessao();
+
+    const {
+      data: listener,
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+
+      setIsLoggedIn(!!session);
+
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+
+  }, []);
+
+  const handleLogin = () => {
     toast.success('Bem-vindo ao sistema!');
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+
+    await supabase.auth.signOut();
 
     setActiveTab('dashboard');
 
