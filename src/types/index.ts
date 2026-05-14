@@ -19,7 +19,7 @@ export interface Proposta {
   ramo: string;
 
   propostaNumero: string;
-  dataTransmissao: string; // yyyy-mm-dd
+  dataTransmissao: string;
 
   premioLiquido: number;
 
@@ -36,6 +36,8 @@ export interface Proposta {
   status: StatusProposta;
 
   statusSegurado?: StatusSegurado;
+
+  gratuidade?: boolean;
 
   observacoes?: string;
 }

@@ -53,6 +53,7 @@ type FormDataState = {
   comissaoPercentual: string;
   observacoes: string;
   status: StatusProposta;
+  gratuidade: boolean;
 };
 
 const DEFAULT_FORM: FormDataState = {
@@ -69,6 +70,7 @@ const DEFAULT_FORM: FormDataState = {
   comissaoPercentual: '20',
   observacoes: '',
   status: 'EMITIDA',
+  gratuidade: false,
 };
 
   function limparMoeda(valor: string | number | undefined | null, fallback = 0) {
@@ -579,6 +581,26 @@ observacoes: formData.observacoes || undefined,
                 </div>
 
                 <div className="space-y-2">
+  <Label htmlFor="gratuidade">Gratuidade</Label>
+
+  <select
+    id="gratuidade"
+    className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+    value={formData.gratuidade ? 'SIM' : 'NAO'}
+    onChange={(e) =>
+      setFormData({
+        ...formData,
+        gratuidade: e.target.value === 'SIM',
+      })
+    }
+  >
+    <option value="NAO">Não</option>
+    <option value="SIM">Sim</option>
+  </select>
+</div>
+
+<div className="space-y-2">
+  
                   <Label htmlFor="status">Status *</Label>
 
                   <select
