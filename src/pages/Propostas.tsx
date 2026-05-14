@@ -270,20 +270,21 @@ const propostasFiltradas = listaPropostas.filter((p) => {
     setPropostaEditando(proposta);
 
     setFormData({
-      segurado: proposta.segurado,
-      cpfCnpj: proposta.cpfCnpj,
-      produtor: proposta.produtor || produtores[0] || 'IGO',
-      seguradora: proposta.seguradora,
-      tipo: proposta.tipo,
-      ramo: proposta.ramo,
-      propostaNumero: proposta.propostaNumero || '',
-      dataTransmissao: proposta.dataTransmissao || '',
-      premioLiquido: formatarMoeda(proposta.premioLiquido || 0),
-      quantidadeParcelas: proposta.quantidadeParcelas?.toString() || '1',
-      comissaoPercentual: proposta.comissaoPercentual?.toString() || '20',
-      observacoes: proposta.observacoes || '',
-      status: proposta.status,
-    });
+  segurado: proposta.segurado,
+  cpfCnpj: proposta.cpfCnpj,
+  produtor: proposta.produtor || produtores[0] || 'IGO',
+  seguradora: proposta.seguradora,
+  tipo: proposta.tipo,
+  ramo: proposta.ramo,
+  propostaNumero: proposta.propostaNumero || '',
+  dataTransmissao: proposta.dataTransmissao || '',
+  premioLiquido: formatarMoeda(proposta.premioLiquido || 0),
+  quantidadeParcelas: proposta.quantidadeParcelas?.toString() || '1',
+  comissaoPercentual: proposta.comissaoPercentual?.toString() || '20',
+  observacoes: proposta.observacoes || '',
+  status: proposta.status,
+  gratuidade: proposta.gratuidade || false,
+});
 
     setIsDialogOpen(true);
   };
