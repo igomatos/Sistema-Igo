@@ -71,19 +71,7 @@ const DEFAULT_FORM: FormDataState = {
   status: 'EMITIDA',
 };
 
-type DadosPdfExtraidos = Partial<{
-  segurado: string;
-  cpfCnpj: string;
-  produtor: string;
-  seguradora: string;
-  ramo: string;
-  premioLiquido: number | string;
-  comissaoPercentual: number | string;
-  propostaNumero: string;
-  dataTransmissao: string;
-}>;
-
-function limparMoeda(valor: string | number | undefined | null, fallback = 0) {
+  function limparMoeda(valor: string | number | undefined | null, fallback = 0) {
   if (valor === undefined || valor === null || valor === '') return fallback;
 
   const texto = String(valor)
@@ -303,7 +291,7 @@ observacoes: formData.observacoes || undefined,
     setIsDialogOpen(true);
   };
 
-      return (
+    return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
