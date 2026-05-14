@@ -250,8 +250,9 @@ const propostasFiltradas = listaPropostas.filter((p) => {
       comissaoParcela,
       comissaoValor: comissaoTotal,
       status: formData.status,
-statusSegurado: 'ATIVO',
-observacoes: formData.observacoes || undefined,
+      statusSegurado: 'ATIVO',
+      gratuidade: formData.gratuidade,
+      observacoes: formData.observacoes || undefined,
     };
 
     if (propostaEditando) {
@@ -600,7 +601,7 @@ observacoes: formData.observacoes || undefined,
 </div>
 
 <div className="space-y-2">
-  
+
                   <Label htmlFor="status">Status *</Label>
 
                   <select
