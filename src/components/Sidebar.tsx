@@ -22,7 +22,7 @@ const menuItems = [
   { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
   { id: 'propostas', label: 'Segurados', icon: FileText },
   { id: 'comissoes', label: 'Comissões', icon: DollarSign },
-  { id: 'conciliacao_anadem', label: 'Conciliação ANADEM', icon: ClipboardCheck },
+  { id: 'Leitor_PDF', label: 'Leitor PDF', icon: ClipboardCheck },
   { id: 'relatorios', label: 'Relatórios', icon: TrendingUp },
 ];
 
