@@ -35,7 +35,7 @@ export interface Proposta {
 
   status: StatusProposta;
 
-  statusSegurado: StatusSegurado;
+  statusSegurado?: StatusSegurado;
 
   observacoes?: string;
 }

@@ -32,7 +32,7 @@ function propostaParaBanco(proposta: Proposta) {
     comissao_parcela: proposta.comissaoParcela,
     comissao_valor: proposta.comissaoValor,
     status: proposta.status,
-    status_segurado: proposta.statusSegurado,
+    status_segurado: proposta.statusSegurado || 'ATIVO',
     observacoes: proposta.observacoes,
     data_cadastro: proposta.dataCadastro
   };
@@ -47,6 +47,8 @@ function propostaDoBanco(row: any): Proposta {
     seguradora: row.seguradora,
     tipo: row.tipo,
     ramo: row.ramo,
+    propostaNumero: row.proposta_numero || '',
+    dataTransmissao: row.data_transmissao || '',
     premioLiquido: Number(row.premio_liquido || 0),
     quantidadeParcelas: Number(row.quantidade_parcelas || 1),
     valorParcelaSeguro: Number(row.valor_parcela_seguro || 0),
