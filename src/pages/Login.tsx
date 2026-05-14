@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import logoRaquel from '@/assets/logo-raquel.png';
+import { supabase } from '@/lib/supabase';
 
 interface LoginProps {
   onLogin: () => void;
@@ -10,16 +11,41 @@ export function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(false);
 
-  const handleEntrar = () => {
+  const handleEntrar = async () => {
 
     if (!email || !senha) {
       setErro('Preencha e-mail e senha.');
       return;
     }
 
-    setErro('');
-    onLogin();
+    try {
+
+      setCarregando(true);
+      setErro('');
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+
+      if (error) {
+        setErro('E-mail ou senha inválidos.');
+        return;
+      }
+
+      onLogin();
+
+    } catch (err) {
+
+      setErro('Erro ao fazer login.');
+
+    } finally {
+
+      setCarregando(false);
+
+    }
   };
 
   return (
@@ -40,9 +66,6 @@ export function Login({ onLogin }: LoginProps) {
         <h1 className="text-3xl font-black text-[#111827] text-center">
           Bem-vindo
         </h1>
-
-        <h1 className="text-3xl font-black text-[#111827] text-center">
-</h1>
 
         <div className="mt-8 space-y-4">
 
@@ -70,9 +93,10 @@ export function Login({ onLogin }: LoginProps) {
 
           <button
             onClick={handleEntrar}
+            disabled={carregando}
             className="w-full h-14 rounded-2xl bg-[#F47FA0] text-white font-bold text-lg shadow-lg shadow-pink-200 hover:bg-[#ec6f94] transition-all duration-300 hover:scale-[1.02]"
           >
-            Entrar
+            {carregando ? 'Entrando...' : 'Entrar'}
           </button>
 
         </div>
