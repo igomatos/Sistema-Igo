@@ -12,7 +12,6 @@ import {
   Upload,
 } from 'lucide-react';
 
-import { PdfUploader } from '@/components/PdfUploader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -147,7 +146,6 @@ export function Propostas({
   const [filtroTipo, setFiltroTipo] = useState<string>('todos');
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isPdfUploaderOpen, setIsPdfUploaderOpen] = useState(false);
   const [propostaEditando, setPropostaEditando] = useState<Proposta | null>(null);
   const [formData, setFormData] = useState<FormDataState>(DEFAULT_FORM);
   const [propostasBanco, setPropostasBanco] = useState<Proposta[]>([]);
@@ -345,15 +343,7 @@ observacoes: formData.observacoes || undefined,
         </div>
 
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsPdfUploaderOpen(true)}
-            className="border-[#F47FA0] text-[#F47FA0] hover:bg-[#F6EAEA]"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Importar PDF
-          </Button>
-
+          
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button
@@ -687,10 +677,7 @@ observacoes: formData.observacoes || undefined,
           </Dialog>
         </div>
       </div>
-            <PdfUploader
-               onDadosExtraidos={handleDadosPdfExtraidos}
-            />
-
+            
       <Card className="border-0 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
