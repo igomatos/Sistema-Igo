@@ -333,7 +333,7 @@ export function Comissoes({ comissoes, onAdicionarPagamento, onExcluirPagamento 
     size="icon"
     className="h-8 w-8"
     onClick={() => {
-      alert(`Editar segurado: ${comissao.proposta.segurado}`);
+      window.location.href = `/segurados?id=${comissao.proposta.id}`;
     }}
   >
     <Pencil className="w-4 h-4" />
