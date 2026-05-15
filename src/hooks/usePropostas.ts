@@ -6,7 +6,6 @@ import type {
   StatusComissao
 } from '@/types';
 
-import { propostasMock, pagamentosMock } from '@/data/mockData';
 import {
   loadPagamentos,
   loadPropostas,
@@ -25,6 +24,8 @@ function propostaParaBanco(proposta: Proposta) {
     seguradora: proposta.seguradora,
     tipo: proposta.tipo,
     ramo: proposta.ramo,
+    proposta_numero: proposta.propostaNumero,
+    data_transmissao: proposta.dataTransmissao,
     premio_liquido: proposta.premioLiquido,
     quantidade_parcelas: proposta.quantidadeParcelas,
     valor_parcela_seguro: proposta.valorParcelaSeguro,
@@ -86,11 +87,11 @@ function pagamentoDoBanco(row: any): PagamentoComissao {
 
 export function usePropostas() {
   const [propostas, setPropostas] = useState<Proposta[]>(() =>
-    loadPropostas(propostasMock)
+    loadPropostas([])
   );
 
   const [pagamentos, setPagamentos] = useState<PagamentoComissao[]>(() =>
-    loadPagamentos(pagamentosMock)
+    loadPagamentos([])
   );
 
   const [carregando, setCarregando] = useState(true);
@@ -105,6 +106,8 @@ export function usePropostas() {
 
         if (erroPropostas) {
           console.error('Erro ao carregar propostas do Supabase:', erroPropostas.message);
+          setPropostas([]);
+          savePropostas([]);
           return;
         }
 
@@ -114,21 +117,19 @@ export function usePropostas() {
 
         if (erroPagamentos) {
           console.error('Erro ao carregar pagamentos do Supabase:', erroPagamentos.message);
+          setPagamentos([]);
+          savePagamentos([]);
           return;
         }
 
         const propostasConvertidas = (propostasOnline || []).map(propostaDoBanco);
         const pagamentosConvertidos = (pagamentosOnline || []).map(pagamentoDoBanco);
 
-        if (propostasConvertidas.length > 0) {
-          setPropostas(propostasConvertidas);
-          savePropostas(propostasConvertidas);
-        }
+        setPropostas(propostasConvertidas);
+        savePropostas(propostasConvertidas);
 
-        if (pagamentosConvertidos.length > 0) {
-          setPagamentos(pagamentosConvertidos);
-          savePagamentos(pagamentosConvertidos);
-        }
+        setPagamentos(pagamentosConvertidos);
+        savePagamentos(pagamentosConvertidos);
       } finally {
         setCarregando(false);
       }
@@ -165,7 +166,9 @@ export function usePropostas() {
 
       let status: StatusComissao;
 
-      if (totalPago === 0) {
+      if (proposta.gratuidade) {
+        status = 'PAGO';
+      } else if (totalPago === 0) {
         status = 'PENDENTE';
       } else if (totalPago >= proposta.comissaoValor) {
         status = 'PAGO';
@@ -209,8 +212,9 @@ export function usePropostas() {
       const proposta: Proposta = {
         ...novaProposta,
         id: Date.now().toString(),
-       dataCadastro: new Date().toISOString().split('T')[0],
-statusSegurado: 'ATIVO'
+        dataCadastro: new Date().toISOString().split('T')[0],
+        statusSegurado: 'ATIVO',
+        gratuidade: novaProposta.gratuidade || false
       };
 
       setPropostas((prev) => [proposta, ...prev]);
@@ -247,11 +251,11 @@ statusSegurado: 'ATIVO'
         throw new Error('Valor do pagamento excede a comissão total');
       }
 
-      const dataObj = new Date(data);
-      const dia = dataObj.getDate();
-      const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
-      const ano = dataObj.getFullYear();
-      const referencia = `${dia <= 15 ? '05' : '20'}/${mes}/${ano}`;
+      const partes = data.split('-');
+      const referencia =
+        partes.length === 3
+          ? `${partes[1]}/${partes[0]}`
+          : data;
 
       const pagamento: PagamentoComissao = {
         id: Date.now().toString(),
