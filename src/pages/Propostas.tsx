@@ -220,8 +220,7 @@ const propostasFiltradas = listaPropostas.filter((p) => {
       dataTransmissao.includes(searchTerm);
 
     const matchTipo = filtroTipo === 'todos' || p.tipo === filtroTipo;
-    const matchStatus = filtroStatus === 'todos' || p.status === filtroStatus;
-
+    
     return matchSearch && matchTipo;
 }).sort((a, b) =>
   a.segurado.localeCompare(b.segurado, 'pt-BR')
