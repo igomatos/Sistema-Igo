@@ -111,9 +111,36 @@ export function usePropostas() {
           return;
         }
 
-        const { data: pagamentosOnline, error: erroPagamentos } = await supabase
-          .from('pagamentos')
-          .select('*');
+        let todosPagamentos: any[] = [];
+let pagina = 0;
+const tamanhoPagina = 1000;
+
+while (true) {
+  const inicio = pagina * tamanhoPagina;
+  const fim = inicio + tamanhoPagina - 1;
+
+  const { data, error } = await supabase
+    .from('pagamentos')
+    .select('*')
+    .range(inicio, fim);
+
+  if (error) {
+    console.error('Erro ao carregar pagamentos do Supabase:', error.message);
+    setPagamentos([]);
+    savePagamentos([]);
+    return;
+  }
+
+  todosPagamentos = [...todosPagamentos, ...(data || [])];
+
+  if (!data || data.length < tamanhoPagina) {
+    break;
+  }
+
+  pagina++;
+}
+
+const pagamentosOnline = todosPagamentos;
 
         if (erroPagamentos) {
           console.error('Erro ao carregar pagamentos do Supabase:', erroPagamentos.message);
