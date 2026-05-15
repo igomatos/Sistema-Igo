@@ -34,6 +34,26 @@ import { StatusBadge } from '@/components/StatusBadge';
 import type { ComissaoProposta } from '@/types';
 import { cn } from '@/lib/utils';
 
+function formatarDataBrasil(data: string) {
+
+  if (!data) return '';
+
+  if (data.includes('/')) {
+    return data;
+  }
+
+  const partes = data.split('-');
+
+  if (partes.length === 3) {
+
+    const [ano, mes, dia] = partes;
+
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  return data;
+}
+
 interface ComissoesProps {
   comissoes: ComissaoProposta[];
   onAdicionarPagamento: (propostaId: string, valor: number, data: string) => void;
@@ -326,7 +346,7 @@ export function Comissoes({ comissoes, onAdicionarPagamento, onExcluirPagamento 
                           >
                             <div className="flex items-center gap-2">
                               <Calendar className="w-3 h-3 text-slate-400" />
-                              <span>{new Date(pag.dataPagamento).toLocaleDateString('pt-BR')}</span>
+                              <span>{formatarDataBrasil(pag.dataPagamento)}</span>
                               <Badge variant="outline" className="text-[10px]">
                                 {pag.referencia}
                               </Badge>
