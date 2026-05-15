@@ -79,7 +79,7 @@ export async function lerPdfAnadem(file: File): Promise<RegistroPdfAnadem[]> {
   const registros: RegistroPdfAnadem[] = [];
 
   const regex =
-    /(\d{3,6})\s*([A-Za-zÀ-ÿ0-9 .,&'()-]+?)\s+(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\s+(\d{2}\/\d{2}\/\d{4})\s+R\$\s?([\d.,]+)\s+R\$\s?([\d.,]+)\s+(\d+%)\s+(\d{2}\/\d{2}\/\d{4})/g;
+    /(\d{3,6})\s*([A-Za-zÀ-ÿ0-9 .,&'()-]+?)\s+(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\s+(\d{2}\/\d{2}\/\d{4})\s+R\$\s?([\d.,]+)\s+R\$\s?([\d.,]+)\s+(\d+%)\s+(?:(\d{2}\/\d{4})\s+)?(\d{2}\/\d{2}\/\d{4})/g;
 
   let match;
 
@@ -92,8 +92,8 @@ export async function lerPdfAnadem(file: File): Promise<RegistroPdfAnadem[]> {
       comissao: converterMoeda(match[5]),
       baseCalculo: converterMoeda(match[6]),
       porcentagem: match[7],
-      competencia: competenciaPadrao,
-      dataPagamento: match[8],
+      competencia: match[8] || competenciaPadrao,
+      dataPagamento: match[9],
     });
   }
 
