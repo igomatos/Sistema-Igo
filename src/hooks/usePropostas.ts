@@ -141,14 +141,7 @@ while (true) {
 }
 
 const pagamentosOnline = todosPagamentos;
-
-        if (erroPagamentos) {
-          console.error('Erro ao carregar pagamentos do Supabase:', erroPagamentos.message);
-          setPagamentos([]);
-          savePagamentos([]);
-          return;
-        }
-
+        
         const propostasConvertidas = (propostasOnline || []).map(propostaDoBanco);
         const pagamentosConvertidos = (pagamentosOnline || []).map(pagamentoDoBanco);
 
