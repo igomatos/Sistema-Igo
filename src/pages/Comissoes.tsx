@@ -67,10 +67,14 @@ export function Comissoes({ comissoes, onAdicionarPagamento, onExcluirPagamento 
   const [valorPagamento, setValorPagamento] = useState('');
   const [dataPagamento, setDataPagamento] = useState('');
 
-  const comissoesFiltradas = comissoes.filter(c => {
+  const comissoesFiltradas = comissoes
+  .filter(c => {
     if (activeTab === 'todas') return true;
     return c.status === activeTab.toUpperCase();
-  });
+  })
+  .sort((a, b) =>
+    a.proposta.segurado.localeCompare(b.proposta.segurado, 'pt-BR')
+  );
 
   const comissoesPendentes = comissoes.filter(c => c.status === 'PENDENTE');
   const comissoesParciais = comissoes.filter(c => c.status === 'PARCIAL');
