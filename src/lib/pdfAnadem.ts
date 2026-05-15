@@ -25,6 +25,26 @@ function converterMoeda(valor: string) {
   );
 }
 
+function descobrirCompetencia(texto: string, nomeArquivo: string) {
+  const periodoMatch = texto.match(
+    /Per[ií]odo de apura[cç][aã]o:\s*(\d{2})\/(\d{2})\/(\d{4})\s+at[eé]\s+(\d{2})\/(\d{2})\/(\d{4})/i
+  );
+
+  if (periodoMatch) {
+    const mes = periodoMatch[2];
+    const ano = periodoMatch[3];
+    return `${mes}/${ano}`;
+  }
+
+  const arquivoMatch = nomeArquivo.match(/(\d{2})[_-](\d{4})/);
+
+  if (arquivoMatch) {
+    return `${arquivoMatch[1]}/${arquivoMatch[2]}`;
+  }
+
+  return '';
+}
+
 export async function lerPdfAnadem(file: File): Promise<RegistroPdfAnadem[]> {
   const arrayBuffer = await file.arrayBuffer();
 
@@ -52,11 +72,9 @@ export async function lerPdfAnadem(file: File): Promise<RegistroPdfAnadem[]> {
 
   console.log('TEXTO COMPLETO DO PDF ANADEM:', texto);
 
-  const periodoMatch = texto.match(/Per[ií]odo de apura[cç][aã]o:\s*(\d{2})\/\d{2}\/(\d{4})/i);
+  const competenciaPadrao = descobrirCompetencia(texto, file.name);
 
-  const competenciaPadrao = periodoMatch
-    ? `${periodoMatch[1]}/${periodoMatch[2]}`
-    : '';
+  console.log('COMPETÊNCIA IDENTIFICADA:', competenciaPadrao);
 
   const registros: RegistroPdfAnadem[] = [];
 
