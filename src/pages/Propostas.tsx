@@ -225,6 +225,26 @@ const propostasFiltradas = listaPropostas.filter((p) => {
 }).sort((a, b) =>
   a.segurado.localeCompare(b.segurado, 'pt-BR')
 );
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+
+  if (!id || propostasFiltradas.length === 0) return;
+
+  const propostaEncontrada = propostasFiltradas.find(
+    (p) => p.id === id
+  );
+
+  if (!propostaEncontrada) return;
+
+  handleEdit(propostaEncontrada);
+
+  window.history.replaceState(
+    {},
+    '',
+    window.location.pathname
+  );
+}, [propostasFiltradas]);
 
   const resetForm = () => {
     setFormData({
