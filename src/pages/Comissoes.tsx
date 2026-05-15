@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { 
   DollarSign, 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
-  Plus,
-  Trash2,
-  TrendingUp
+Calendar, 
+CheckCircle2, 
+Clock, 
+Plus,
+Trash2,
+TrendingUp,
+Search,
+Pencil
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,14 +68,27 @@ export function Comissoes({ comissoes, onAdicionarPagamento, onExcluirPagamento 
   const [propostaSelecionada, setPropostaSelecionada] = useState<string>('');
   const [valorPagamento, setValorPagamento] = useState('');
   const [dataPagamento, setDataPagamento] = useState('');
+  const [busca, setBusca] = useState('');
 
   const comissoesFiltradas = comissoes
   .filter(c => {
-    if (activeTab === 'todas') return true;
-    return c.status === activeTab.toUpperCase();
+    const matchStatus =
+      activeTab === 'todas'
+        ? true
+        : c.status === activeTab.toUpperCase();
+
+    const matchBusca =
+      c.proposta.segurado
+        .toLowerCase()
+        .includes(busca.toLowerCase());
+
+    return matchStatus && matchBusca;
   })
   .sort((a, b) =>
-    a.proposta.segurado.localeCompare(b.proposta.segurado, 'pt-BR')
+    a.proposta.segurado.localeCompare(
+      b.proposta.segurado,
+      'pt-BR'
+    )
   );
 
   const comissoesPendentes = comissoes.filter(c => c.status === 'PENDENTE');
@@ -262,6 +277,16 @@ export function Comissoes({ comissoes, onAdicionarPagamento, onExcluirPagamento 
       </div>
 
       {/* Tabs e Lista */}
+      <div className="relative max-w-md">
+  <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+  
+  <Input
+    placeholder="Buscar segurado..."
+    value={busca}
+    onChange={(e) => setBusca(e.target.value)}
+    className="pl-10"
+  />
+</div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4 max-w-md">
           <TabsTrigger value="todas">
@@ -302,7 +327,20 @@ export function Comissoes({ comissoes, onAdicionarPagamento, onExcluirPagamento 
                         {comissao.proposta.seguradora} • {comissao.proposta.ramo}
                       </p>
                     </div>
-                    <StatusBadge status={comissao.status} />
+                    <div className="flex items-center gap-2">
+  <Button
+    variant="ghost"
+    size="icon"
+    className="h-8 w-8"
+    onClick={() => {
+      alert(`Editar segurado: ${comissao.proposta.segurado}`);
+    }}
+  >
+    <Pencil className="w-4 h-4" />
+  </Button>
+
+  <StatusBadge status={comissao.status} />
+</div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
