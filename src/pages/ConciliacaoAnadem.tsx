@@ -124,7 +124,7 @@ for (const arquivoAtual of arquivos) {
         documentosImportados.add(documentoLimpo);
 
         const proposta = {
-          id: `PROP-${documentoLimpo || index}-${textoSeguro(registro.id)}`,
+          id: `PROP-${documentoLimpo}`,
 
           segurado: textoSeguro(registro.segurado),
           cpf_cnpj: textoSeguro(registro.cpfCnpj),
