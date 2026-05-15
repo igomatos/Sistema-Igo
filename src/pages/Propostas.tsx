@@ -140,26 +140,6 @@ export function Propostas({
   const [propostasBanco, setPropostasBanco] = useState<Proposta[]>([]);
 
 useEffect(() => {
-  useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get('id');
-
-  if (!id || propostasFiltradas.length === 0) return;
-
-  const propostaEncontrada = propostasFiltradas.find(
-    (p) => p.id === id
-  );
-
-  if (propostaEncontrada) {
-    handleEdit(propostaEncontrada);
-
-    window.history.replaceState(
-      {},
-      '',
-      window.location.pathname
-    );
-  }
-}, [propostasFiltradas]);
   async function carregarPropostasBanco() {
     const { data, error } = await supabase
       .from('propostas')
