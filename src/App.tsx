@@ -21,6 +21,24 @@ import { supabase } from '@/lib/supabase';
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+  if (id) {
+    setActiveTab('propostas');
+  }
+}, []);
+
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+
+  if (id) {
+    setActiveTab('propostas');
+  }
+}, []);
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const {
