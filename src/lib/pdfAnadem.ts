@@ -25,18 +25,32 @@ function converterMoeda(valor: string) {
   );
 }
 
+function limparNomeSegurado(nome: string) {
+  return nome
+    .replace(/^R\$\s?[\d.,]+\s*/g, '')
+    .replace(/^[\d.,]+\s+/g, '')
+    .replace(/^\d{3,6}(?=[A-Za-zÀ-ÿ])/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function limparCpfCnpj(valor: string) {
+  return valor
+    .replace(/\s+/g, '')
+    .replace('/0001-', '/0001-')
+    .trim();
+}
+
 function descobrirCompetencia(texto: string, nomeArquivo: string) {
   const periodoMatch = texto.match(
     /Per[ií]odo de apura[cç][aã]o:\s*(\d{2})\/(\d{2})\/(\d{4})\s+at[eé]\s+(\d{2})\/(\d{2})\/(\d{4})/i
   );
 
   if (periodoMatch) {
-    const mes = periodoMatch[2];
-    const ano = periodoMatch[3];
-    return `${mes}/${ano}`;
+    return `${periodoMatch[2]}/${periodoMatch[3]}`;
   }
 
-  const arquivoMatch = nomeArquivo.match(/(\d{2})[_-](\d{4})/);
+  const arquivoMatch = nomeArquivo.match(/(\d{2})[_\-.](\d{4})/);
 
   if (arquivoMatch) {
     return `${arquivoMatch[1]}/${arquivoMatch[2]}`;
@@ -68,6 +82,8 @@ export async function lerPdfAnadem(file: File): Promise<RegistroPdfAnadem[]> {
   const texto = textoCompleto
     .replace(/\s+/g, ' ')
     .replace(/\/0001-\s+/g, '/0001-')
+    .replace(/PorcentagemCompetência/g, 'Porcentagem Competência')
+    .replace(/Pagamento(\d{3,6})/g, 'Pagamento $1')
     .trim();
 
   console.log('TEXTO COMPLETO DO PDF ANADEM:', texto);
@@ -79,15 +95,15 @@ export async function lerPdfAnadem(file: File): Promise<RegistroPdfAnadem[]> {
   const registros: RegistroPdfAnadem[] = [];
 
   const regex =
-    /(\d{3,6})\s*([A-Za-zÀ-ÿ0-9 .,&'()-]+?)\s+(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\s+(\d{2}\/\d{2}\/\d{4})\s+R\$\s?([\d.,]+)\s+R\$\s?([\d.,]+)\s+(\d+%)\s+(?:(\d{2}\/\d{4})\s+)?(\d{2}\/\d{2}\/\d{4})/g;
+    /(\d{3,6})\s*([A-Za-zÀ-ÿ0-9 .,&'()/-]+?)\s*(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\s+(\d{2}\/\d{2}\/\d{4})\s+R\$\s?([\d.]+,\d{2})\s+R\$\s?([\d.]+,\d{2})\s+(\d+%)\s+(?:(\d{2}\/\d{4})\s+)?(\d{2}\/\d{2}\/\d{4})/g;
 
   let match;
 
   while ((match = regex.exec(texto)) !== null) {
     registros.push({
       id: match[1],
-      segurado: match[2].trim(),
-      cpfCnpj: match[3].trim(),
+      segurado: limparNomeSegurado(match[2]),
+      cpfCnpj: limparCpfCnpj(match[3]),
       associadoDesde: match[4],
       comissao: converterMoeda(match[5]),
       baseCalculo: converterMoeda(match[6]),
