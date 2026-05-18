@@ -230,6 +230,16 @@ const totalPagoCiclo = pagamentosProposta
 
 const saldoDevedor = proposta.comissaoValor - totalPagoCiclo;
 
+const parcelasPagas = pagamentosProposta.length;
+
+const parcelasPendentes =
+  parcelasEsperadas - parcelasPagas > 0
+    ? parcelasEsperadas - parcelasPagas
+    : 0;
+
+const cicloFinalizado =
+  parcelasPagas >= parcelasEsperadas;
+
 const percentualPago =
   proposta.comissaoValor > 0
     ? Math.min((totalPagoCiclo / proposta.comissaoValor) * 100, 100)
@@ -239,6 +249,8 @@ const percentualPago =
 
       if (proposta.gratuidade) {
         status = 'PAGO';
+      } else if (cicloFinalizado && parcelasPendentes > 0) {
+        status = 'RENOVAR';
       } else if (totalPago === 0) {
         status = 'PENDENTE';
       } else if (totalPago >= proposta.comissaoValor) {
@@ -255,6 +267,10 @@ const percentualPago =
         percentualPago,
         valorEsperadoParcela,
         referenciasEsperadas,
+        parcelasPagas,
+        parcelasEsperadas,
+        parcelasPendentes,
+        cicloFinalizado,
         status
       };
     });

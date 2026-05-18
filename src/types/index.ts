@@ -1,6 +1,6 @@
 export type TipoProposta = 'NOVO' | 'RENOVACAO';
 
-export type StatusComissao = 'PENDENTE' | 'PARCIAL' | 'PAGO';
+export type StatusComissao = 'PENDENTE' | 'PARCIAL' | 'PAGO' | 'RENOVAR';
 
 export type StatusProposta = 'EMITIDA' | 'PAGA' | 'CANCELADA';
 
@@ -64,6 +64,16 @@ export interface ComissaoProposta {
   totalPago: number;
   saldoDevedor: number;
   percentualPago: number;
+
+  valorEsperadoParcela: number;
+  referenciasEsperadas: string[];
+
+  parcelasPagas: number;
+  parcelasEsperadas: number;
+  parcelasPendentes: number;
+
+  cicloFinalizado: boolean;
+
   status: StatusComissao;
 }
 

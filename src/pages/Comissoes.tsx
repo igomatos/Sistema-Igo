@@ -375,6 +375,28 @@ export function Comissoes({ comissoes, onAdicionarPagamento, onExcluirPagamento 
                       </p>
                     </div>
                   </div>
+                  <div className="grid grid-cols-3 gap-3 pt-2">
+  <div className="text-center p-2 bg-blue-50 rounded-lg">
+    <p className="text-xs text-slate-500">Parcelas pagas</p>
+    <p className="font-semibold text-blue-700">
+      {comissao.parcelasPagas || 0} / {comissao.parcelasEsperadas || 0}
+    </p>
+  </div>
+
+  <div className="text-center p-2 bg-amber-50 rounded-lg">
+    <p className="text-xs text-slate-500">Pendentes</p>
+    <p className="font-semibold text-amber-700">
+      {comissao.parcelasPendentes || 0}
+    </p>
+  </div>
+
+  <div className="text-center p-2 bg-emerald-50 rounded-lg">
+    <p className="text-xs text-slate-500">Ciclo</p>
+    <p className="font-semibold text-emerald-700">
+      {comissao.cicloFinalizado ? 'Finalizado' : 'Em andamento'}
+    </p>
+  </div>
+</div>
 
                   {/* Histórico de Pagamentos */}
                   {comissao.pagamentos.length > 0 && (

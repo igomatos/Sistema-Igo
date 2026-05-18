@@ -524,6 +524,92 @@ useEffect(() => {
                       }
                     />
                   </div>
+                  <div className="border rounded-xl p-4 bg-slate-50 space-y-4">
+  <div>
+    <h3 className="text-sm font-semibold text-slate-800">
+      Controle do Ciclo
+    </h3>
+    <p className="text-xs text-slate-500">
+      Configure o início, parcelas e status do contrato de comissão.
+    </p>
+  </div>
+
+  <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-2">
+      <Label htmlFor="dataInicioCiclo">Data início do ciclo</Label>
+      <Input
+        id="dataInicioCiclo"
+        placeholder="MM/AAAA"
+        value={formData.dataInicioCiclo}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            dataInicioCiclo: e.target.value,
+          })
+        }
+      />
+    </div>
+
+    <div className="space-y-2">
+      <Label htmlFor="parcelasCiclo">Parcelas do ciclo</Label>
+      <Input
+        id="parcelasCiclo"
+        type="number"
+        min="1"
+        value={formData.parcelasCiclo}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            parcelasCiclo: e.target.value,
+          })
+        }
+      />
+    </div>
+  </div>
+</div>
+<div className="grid grid-cols-2 gap-4">
+  <div className="space-y-2">
+    <Label htmlFor="statusContrato">
+      Status do contrato
+    </Label>
+
+    <select
+      id="statusContrato"
+      value={formData.statusContrato}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          statusContrato: e.target.value as any,
+        })
+      }
+      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+    >
+      <option value="ATIVO">ATIVO</option>
+      <option value="CANCELADO">CANCELADO</option>
+      <option value="FINALIZADO">FINALIZADO</option>
+      <option value="GRATUIDADE">GRATUIDADE</option>
+      <option value="EM_ANALISE">EM ANÁLISE</option>
+    </select>
+  </div>
+
+  <div className="space-y-2">
+    <Label htmlFor="dataCancelamento">
+      Data cancelamento
+    </Label>
+
+    <Input
+      id="dataCancelamento"
+      type="date"
+      value={formData.dataCancelamento}
+      onChange={(e) =>
+        setFormData({
+          ...formData,
+          dataCancelamento: e.target.value,
+        })
+      }
+    />
+  </div>
+</div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
