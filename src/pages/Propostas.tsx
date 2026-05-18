@@ -48,6 +48,10 @@ type FormDataState = {
   ramo: string;
   propostaNumero: string;
   dataTransmissao: string;
+  dataInicioCiclo: string;
+  parcelasCiclo: string;
+  statusContrato: 'ATIVO' | 'CANCELADO' | 'FINALIZADO' | 'GRATUIDADE' | 'EM_ANALISE';
+  dataCancelamento: string;
   premioLiquido: string;
   quantidadeParcelas: string;
   comissaoPercentual: string;
@@ -65,6 +69,10 @@ const DEFAULT_FORM: FormDataState = {
   ramo: '',
   propostaNumero: '',
   dataTransmissao: '',
+  dataInicioCiclo: '',
+  parcelasCiclo: '12',
+  statusContrato: 'ATIVO',
+  dataCancelamento: '',
   premioLiquido: '',
   quantidadeParcelas: '1',
   comissaoPercentual: '20',
@@ -265,6 +273,10 @@ useEffect(() => {
       ramo: formData.ramo,
       propostaNumero: formData.propostaNumero,
       dataTransmissao: formData.dataTransmissao,
+      dataInicioCiclo: formData.dataInicioCiclo,
+      parcelasCiclo: Number(formData.parcelasCiclo || 12),
+      statusContrato: formData.statusContrato,
+      dataCancelamento: formData.dataCancelamento,
       premioLiquido: premio,
       quantidadeParcelas,
       valorParcelaSeguro,
@@ -300,6 +312,10 @@ useEffect(() => {
   ramo: proposta.ramo,
   propostaNumero: proposta.propostaNumero || '',
   dataTransmissao: proposta.dataTransmissao || '',
+  dataInicioCiclo: proposta.dataInicioCiclo || '',
+  parcelasCiclo: proposta.parcelasCiclo?.toString() || '12',
+  statusContrato: proposta.statusContrato || 'ATIVO',
+  dataCancelamento: proposta.dataCancelamento || '',
   premioLiquido: formatarMoeda(proposta.premioLiquido || 0),
   quantidadeParcelas: proposta.quantidadeParcelas?.toString() || '1',
   comissaoPercentual: proposta.comissaoPercentual?.toString() || '20',
