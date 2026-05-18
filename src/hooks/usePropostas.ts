@@ -172,17 +172,68 @@ const pagamentosOnline = todosPagamentos;
         (p) => p.propostaId === proposta.id
       );
 
-      const totalPago = pagamentosProposta.reduce(
-        (sum, p) => sum + p.valorPago,
-        0
-      );
+      const pagamentosOrdenados = [...pagamentosProposta].sort((a, b) =>
+  (a.referencia || '').localeCompare(b.referencia || '')
+);
 
-      const saldoDevedor = proposta.comissaoValor - totalPago;
+const primeiroPagamento = pagamentosOrdenados[0]?.referencia;
+const ultimoPagamento = pagamentosOrdenados[pagamentosOrdenados.length - 1]?.referencia;
+const inicioCiclo = proposta.dataInicioCiclo || primeiroPagamento;
 
-      const percentualPago =
-        proposta.comissaoValor > 0
-          ? (totalPago / proposta.comissaoValor) * 100
-          : 0;
+const parcelasEsperadas = proposta.parcelasCiclo || 12;
+
+const valorEsperadoParcela =
+  parcelasEsperadas > 0
+    ? proposta.comissaoValor / parcelasEsperadas
+    : proposta.comissaoValor;
+
+ const referenciasEsperadas: string[] = [];
+
+ if (inicioCiclo) {
+  const [mesInicio, anoInicio] = inicioCiclo.split('/').map(Number);
+
+  for (let i = 0; i < parcelasEsperadas; i++) {
+    const data = new Date(anoInicio, mesInicio - 1 + i);
+
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+
+    const ano = data.getFullYear();
+
+    referenciasEsperadas.push(`${mes}/${ano}`);
+  }
+}   
+
+const totalPago = pagamentosProposta.reduce(
+  (sum, p) => sum + p.valorPago,
+  0
+);
+
+const totalPagoCiclo = pagamentosProposta
+  .filter((p) => {
+    if (!primeiroPagamento || !ultimoPagamento || !p.referencia) return true;
+
+    const [mesInicio, anoInicio] = primeiroPagamento.split('/').map(Number);
+    const [mesAtual, anoAtual] = ultimoPagamento.split('/').map(Number);
+    const [mesPgto, anoPgto] = p.referencia.split('/').map(Number);
+
+    const inicioAbs = anoInicio * 12 + mesInicio;
+    const atualAbs = anoAtual * 12 + mesAtual;
+    const pgtoAbs = anoPgto * 12 + mesPgto;
+
+    const cicloAtual = Math.floor((atualAbs - inicioAbs) / 12);
+    const inicioCiclo = inicioAbs + cicloAtual * 12;
+    const fimCiclo = inicioCiclo + 11;
+
+    return pgtoAbs >= inicioCiclo && pgtoAbs <= fimCiclo;
+  })
+  .reduce((sum, p) => sum + p.valorPago, 0);
+
+const saldoDevedor = proposta.comissaoValor - totalPagoCiclo;
+
+const percentualPago =
+  proposta.comissaoValor > 0
+    ? Math.min((totalPagoCiclo / proposta.comissaoValor) * 100, 100)
+    : 0;
 
       let status: StatusComissao;
 
@@ -199,9 +250,11 @@ const pagamentosOnline = todosPagamentos;
       return {
         proposta,
         pagamentos: pagamentosProposta,
-        totalPago,
+        totalPago: totalPagoCiclo,
         saldoDevedor,
         percentualPago,
+        valorEsperadoParcela,
+        referenciasEsperadas,
         status
       };
     });

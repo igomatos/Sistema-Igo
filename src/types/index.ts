@@ -21,6 +21,14 @@ export interface Proposta {
   propostaNumero: string;
   dataTransmissao: string;
 
+  dataInicioCiclo?: string;
+
+  parcelasCiclo?: number;
+
+  statusContrato?: 'ATIVO' | 'CANCELADO' | 'FINALIZADO' | 'GRATUIDADE' | 'EM_ANALISE';
+
+  dataCancelamento?: string;
+
   premioLiquido: number;
 
   quantidadeParcelas: number;
