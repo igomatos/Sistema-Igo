@@ -192,7 +192,7 @@ const valorEsperadoParcela =
  if (inicioCiclo) {
   const [mesInicio, anoInicio] = inicioCiclo.split('/').map(Number);
 
-  for (let i = 0; i < parcelasEsperadas; i++) {
+  for (let i = 0; i < 12; i++) {
     const data = new Date(anoInicio, mesInicio - 1 + i);
 
     const mes = String(data.getMonth() + 1).padStart(2, '0');
@@ -202,15 +202,26 @@ const valorEsperadoParcela =
     referenciasEsperadas.push(`${mes}/${ano}`);
   }
 }   
-const mesesRestantes =
-  referenciasEsperadas.length - pagamentosProposta.length;
+const hoje = new Date();
+
+let mesesRestantesCiclo = 999;
+
+if (inicioCiclo) {
+  const [mesInicio, anoInicio] = inicioCiclo.split('/').map(Number);
+
+  const inicioAbs = anoInicio * 12 + mesInicio;
+  const hojeAbs = hoje.getFullYear() * 12 + (hoje.getMonth() + 1);
+
+  const fimCicloAbs = inicioAbs + 11;
+
+  mesesRestantesCiclo = fimCicloAbs - hojeAbs;
+}
 
 const cicloFinalizado =
-  referenciasEsperadas.length > 0 &&
-  pagamentosProposta.length >= referenciasEsperadas.length;
+  mesesRestantesCiclo < 0;
 
 const precisaRenovar =
-  mesesRestantes <= 2 && !cicloFinalizado;
+  mesesRestantesCiclo >= 0 && mesesRestantesCiclo <= 2;
 
 const parcelasPagas = pagamentosProposta.length;
 
