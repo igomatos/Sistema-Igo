@@ -71,6 +71,7 @@ export interface ComissaoProposta {
   parcelasPagas: number;
   parcelasEsperadas: number;
   parcelasPendentes: number;
+  precisaRenovar: boolean;
 
   cicloFinalizado: boolean;
 

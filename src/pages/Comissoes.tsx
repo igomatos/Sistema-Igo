@@ -340,6 +340,11 @@ export function Comissoes({ comissoes, onAdicionarPagamento, onExcluirPagamento 
   </Button>
 
   <StatusBadge status={comissao.status} />
+  {comissao.precisaRenovar && (
+  <div className="mt-2 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-2 py-1 inline-block">
+    Renovação próxima
+  </div>
+)}
 </div>
                   </div>
                 </CardHeader>

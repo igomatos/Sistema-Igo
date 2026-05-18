@@ -202,7 +202,22 @@ const valorEsperadoParcela =
     referenciasEsperadas.push(`${mes}/${ano}`);
   }
 }   
+const mesesRestantes =
+  referenciasEsperadas.length - pagamentosProposta.length;
 
+const cicloFinalizado =
+  referenciasEsperadas.length > 0 &&
+  pagamentosProposta.length >= referenciasEsperadas.length;
+
+const precisaRenovar =
+  mesesRestantes <= 2 && !cicloFinalizado;
+
+const parcelasPagas = pagamentosProposta.length;
+
+const parcelasPendentes =
+  parcelasEsperadas - parcelasPagas > 0
+    ? parcelasEsperadas - parcelasPagas
+    : 0;
 const totalPago = pagamentosProposta.reduce(
   (sum, p) => sum + p.valorPago,
   0
@@ -230,15 +245,6 @@ const totalPagoCiclo = pagamentosProposta
 
 const saldoDevedor = proposta.comissaoValor - totalPagoCiclo;
 
-const parcelasPagas = pagamentosProposta.length;
-
-const parcelasPendentes =
-  parcelasEsperadas - parcelasPagas > 0
-    ? parcelasEsperadas - parcelasPagas
-    : 0;
-
-const cicloFinalizado =
-  parcelasPagas >= parcelasEsperadas;
 
 const percentualPago =
   proposta.comissaoValor > 0
@@ -270,6 +276,7 @@ const percentualPago =
         parcelasPagas,
         parcelasEsperadas,
         parcelasPendentes,
+        precisaRenovar,
         cicloFinalizado,
         status
       };
