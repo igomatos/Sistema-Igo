@@ -26,6 +26,12 @@ function propostaParaBanco(proposta: Proposta) {
     ramo: proposta.ramo,
     proposta_numero: proposta.propostaNumero,
     data_transmissao: proposta.dataTransmissao,
+
+    data_inicio_ciclo: proposta.dataInicioCiclo,
+    parcelas_ciclo: proposta.parcelasCiclo,
+    status_contrato: proposta.statusContrato,
+    data_cancelamento: proposta.dataCancelamento,
+
     premio_liquido: proposta.premioLiquido,
     quantidade_parcelas: proposta.quantidadeParcelas,
     valor_parcela_seguro: proposta.valorParcelaSeguro,
@@ -51,6 +57,12 @@ function propostaDoBanco(row: any): Proposta {
     ramo: row.ramo,
     propostaNumero: row.proposta_numero || '',
     dataTransmissao: row.data_transmissao || '',
+
+    dataInicioCiclo: row.data_inicio_ciclo || '',
+    parcelasCiclo: Number(row.parcelas_ciclo || 12),
+    statusContrato: row.status_contrato || 'ATIVO',
+    dataCancelamento: row.data_cancelamento || '',
+    
     premioLiquido: Number(row.premio_liquido || 0),
     quantidadeParcelas: Number(row.quantidade_parcelas || 1),
     valorParcelaSeguro: Number(row.valor_parcela_seguro || 0),
