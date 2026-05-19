@@ -202,14 +202,14 @@ useEffect(() => {
 
   const premio = limparMoeda(formData.premioLiquido, 0);
   const percentual = limparMoeda(formData.comissaoPercentual, 0);
-  const quantidadeParcelas = Math.max(
-    1,
-    limparMoeda(formData.quantidadeParcelas, 1)
-  );
+  const parcelasCiclo = Math.max(
+  1,
+  limparMoeda(formData.quantidadeParcelas, 1)
+);
 
-  const valorParcelaSeguro = premio / quantidadeParcelas;
-  const comissaoTotal = (premio * percentual) / 100;
-  const comissaoParcela = comissaoTotal / quantidadeParcelas;
+  const valorParcelaSeguro = premio;
+  const comissaoTotal = (premio * parcelasCiclo * percentual) / 100;
+  const comissaoParcela = comissaoTotal / parcelasCiclo;
 
   const searchLower = useMemo(() => searchTerm.toLowerCase(), [searchTerm]);
 
@@ -278,7 +278,7 @@ useEffect(() => {
       statusContrato: formData.statusContrato,
       dataCancelamento: formData.dataCancelamento,
       premioLiquido: premio,
-      quantidadeParcelas,
+      quantidadeParcelas: parcelasCiclo,
       valorParcelaSeguro,
       comissaoPercentual: percentual,
       comissaoParcela,
@@ -386,8 +386,15 @@ useEffect(() => {
                       id="cpfCnpj"
                       value={formData.cpfCnpj}
                       onChange={(e) =>
-                        setFormData({ ...formData, cpfCnpj: e.target.value })
-                      }
+  setFormData({
+    ...formData,
+    cpfCnpj: e.target.value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+  })
+}
                       placeholder="000.000.000-00"
                       required
                     />
@@ -542,11 +549,14 @@ useEffect(() => {
         placeholder="MM/AAAA"
         value={formData.dataInicioCiclo}
         onChange={(e) =>
-          setFormData({
-            ...formData,
-            dataInicioCiclo: e.target.value,
-          })
-        }
+  setFormData({
+    ...formData,
+    dataInicioCiclo: e.target.value
+      .replace(/\D/g, '')
+      .replace(/(\d{2})(\d)/, '$1/$2')
+      .slice(0, 7)
+  })
+}
       />
     </div>
 
@@ -616,7 +626,7 @@ useEffect(() => {
 
                   <div className="space-y-2">
                     <Label htmlFor="premioLiquido">
-                      Prêmio Líquido (R$) *
+                      Valor da Parcela (R$) *
                     </Label>
 
                     <Input
